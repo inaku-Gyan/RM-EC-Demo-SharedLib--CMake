@@ -1,0 +1,30 @@
+# ─── OS artifacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+desktop.ini
+
+# ─── Editor / IDE ─────────────────────────────────────────────────────────────
+*.swp
+*.swo
+*.suo
+.idea/
+
+# VSCode — track shared project config, ignore per-user overrides
+.vscode/*
+!.vscode/settings.example.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ─── Build outputs ────────────────────────────────────────────────────────────
+/build/
+
+# ─── Python artifacts ─────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# ─── LSP / clangd ─────────────────────────────────────────────────────────────
+.cache/
