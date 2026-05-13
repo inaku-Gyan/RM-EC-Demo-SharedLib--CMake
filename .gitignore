@@ -13,6 +13,7 @@ desktop.ini
 # VSCode — track shared project config, ignore per-user overrides
 .vscode/*
 !.vscode/settings.example.json
+!.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/tasks.json
 
