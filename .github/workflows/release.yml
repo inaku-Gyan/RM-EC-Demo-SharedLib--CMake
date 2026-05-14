@@ -41,6 +41,7 @@ jobs:
         with:
           path: ${{ env.SrcCodeDir }}
           ref: ${{ env.ReleaseTag }}
+          fetch-tags: true
           sparse-checkout: |
             src/
             !**/tests/**
