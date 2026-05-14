@@ -7,7 +7,7 @@
     },
     "configurePresets": [
         {
-            "name": "host-base",
+            "name": "test-base",
             "hidden": true,
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
@@ -15,43 +15,63 @@
             }
         },
         {
-            "name": "host-debug",
-            "inherits": "host-base",
-            "displayName": "Host / Debug",
+            "name": "test-dev",
+            "inherits": "test-base",
+            "displayName": "Test / Dev (unoptimized, daily iteration)",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
-            "name": "host-release",
-            "inherits": "host-base",
-            "displayName": "Host / Release",
+            "name": "test-opt",
+            "inherits": "test-base",
+            "displayName": "Test / Opt (verify -O3 -DNDEBUG doesn't break behavior)",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
+        },
+        {
+            "name": "armgcc-base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/arm-none-eabi.cmake",
+            "cacheVariables": {
+                "ECX_BUILD_TESTS": "OFF",
+                "ECX_BUILD_ARM_CHECK": "ON",
+                "CMAKE_BUILD_TYPE": "MinSizeRel"
+            }
+        },
+        {
+            "name": "build-armgcc",
+            "inherits": "armgcc-base",
+            "displayName": "Build / arm-none-eabi-gcc (compile-only smoke check, M4F)"
         }
     ],
     "buildPresets": [
         {
-            "name": "host-debug",
-            "configurePreset": "host-debug"
+            "name": "test-dev",
+            "configurePreset": "test-dev"
         },
         {
-            "name": "host-release",
-            "configurePreset": "host-release"
+            "name": "test-opt",
+            "configurePreset": "test-opt"
+        },
+        {
+            "name": "build-armgcc",
+            "configurePreset": "build-armgcc"
         }
     ],
     "testPresets": [
         {
-            "name": "host-debug",
-            "configurePreset": "host-debug",
+            "name": "test-dev",
+            "configurePreset": "test-dev",
             "output": {
                 "outputOnFailure": true
             }
         },
         {
-            "name": "host-release",
-            "configurePreset": "host-release",
+            "name": "test-opt",
+            "configurePreset": "test-opt",
             "output": {
                 "outputOnFailure": true
             }

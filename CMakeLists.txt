@@ -19,9 +19,15 @@ target_include_directories(ecx INTERFACE
 )
 target_compile_features(ecx INTERFACE cxx_std_20)
 
-option(ECX_BUILD_TESTS "Build host-side tests" ${PROJECT_IS_TOP_LEVEL})
+option(ECX_BUILD_TESTS     "Build host-side tests" ${PROJECT_IS_TOP_LEVEL})
+option(ECX_BUILD_ARM_CHECK "Compile algo+proto with arm-none-eabi-gcc as a smoke check" OFF)
 
 if(ECX_BUILD_TESTS AND NOT CMAKE_CROSSCOMPILING)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(ECX_BUILD_ARM_CHECK)
+    add_library(ecx_arm_check STATIC cmake/arm_compile_check.cpp)
+    target_link_libraries(ecx_arm_check PRIVATE ecx::ecx)
 endif()
