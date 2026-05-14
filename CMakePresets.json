@@ -1,0 +1,60 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "host-base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "ECX_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "host-debug",
+            "inherits": "host-base",
+            "displayName": "Host / Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "host-release",
+            "inherits": "host-base",
+            "displayName": "Host / Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "host-debug",
+            "configurePreset": "host-debug"
+        },
+        {
+            "name": "host-release",
+            "configurePreset": "host-release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "host-debug",
+            "configurePreset": "host-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "host-release",
+            "configurePreset": "host-release",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}

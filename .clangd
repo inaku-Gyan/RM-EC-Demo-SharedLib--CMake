@@ -1,0 +1,9 @@
+CompileFlags:
+  CompilationDatabase: build/host-debug
+
+---
+If:
+  PathMatch: src/rtos/.*
+Diagnostics:
+  Suppress:
+    - pp_file_not_found
