@@ -1,7 +1,6 @@
-// Driver TU for the build-armgcc preset. Forces template instantiation and
-// inline-function codegen so that header-only contents in algo/ and proto/ are
-// actually exercised by arm-none-eabi-gcc. rtos/ is intentionally excluded
-// (depends on FreeRTOS, which is not provided here).
+// build-armgcc preset 使用的驱动翻译单元：强制实例化模板、保留 inline 函数代码，
+// 让 algo/ 与 proto/ 中的 header-only 内容真正经过 arm-none-eabi-gcc 的代码生成。
+// 故意不 include rtos/，因为它依赖 FreeRTOS，本仓库目前未提供其头文件。
 
 #include <array>
 #include <cstdint>
