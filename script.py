@@ -99,7 +99,7 @@ def parse_args() -> ParsedArgs:
         "--all",
         dest="clean_all",
         action="store_true",
-        help="同时删除项目根目录的 .clangd 和 .cache",
+        help="同时删除项目根目录的 .cache",
     )
 
     check_tools_parser = subparsers.add_parser(
@@ -542,7 +542,7 @@ def run_lint_fix(root: Path, clang_tidy: str, quiet: bool, compile_commands_db: 
 def run_clean(root: Path, clean_all: bool) -> NoReturn:
     targets: list[Path] = [root / "build"]
     if clean_all:
-        targets += [root / ".clangd", root / ".cache"]
+        targets += [root / ".cache"]
 
     for target in targets:
         if not target.exists():
