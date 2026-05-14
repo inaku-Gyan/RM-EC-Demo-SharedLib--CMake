@@ -60,7 +60,7 @@ jobs:
           # 输出 commit SHA
           commit_sha=$(git rev-parse HEAD)
           echo "Original commit SHA: $commit_sha"
-          echo "CommitSHA=$commit_sha" >> $GITHUB_ENV
+          echo "CommitSHA=$commit_sha" >> $GITHUB_OUTPUT
 
       - name: Checkout the release repo
         uses: actions/checkout@v6
