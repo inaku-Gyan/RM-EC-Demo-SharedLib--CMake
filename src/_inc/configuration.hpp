@@ -2,6 +2,7 @@
 
 #include "ecx_config_default.hpp"  // IWYU pragma: export
 
+// 让用户配置覆盖默认配置
 #if __has_include(<ecx_config.hpp>)
   #include <ecx_config.hpp>  // IWYU pragma: export
 #endif
