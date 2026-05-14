@@ -9,6 +9,7 @@
         {
             "name": "test-base",
             "hidden": true,
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "ECX_BUILD_TESTS": "ON"
@@ -33,6 +34,7 @@
         {
             "name": "armgcc-base",
             "hidden": true,
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "toolchainFile": "${sourceDir}/cmake/arm-none-eabi.cmake",
             "cacheVariables": {
