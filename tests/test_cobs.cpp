@@ -1,7 +1,8 @@
-#include <array>
-#include <cstdint>
-
 #include <gtest/gtest.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
 
 #include "proto/cobs.hpp"
 
@@ -19,8 +20,7 @@ TEST(CobsTest, RoundTripPayloadWithZeros) {
     ASSERT_EQ(encoded[encoded_len - 1], 0x00);
 
     std::array<uint8_t, 16> decoded{};
-    const size_t            decoded_len =
-        cobs_decode({encoded.data(), encoded_len - 1}, decoded);
+    const size_t            decoded_len = cobs_decode({encoded.data(), encoded_len - 1}, decoded);
     ASSERT_EQ(decoded_len, payload.size());
     for (size_t i = 0; i < payload.size(); ++i) { EXPECT_EQ(decoded[i], payload[i]); }
 }

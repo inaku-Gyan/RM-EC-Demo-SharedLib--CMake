@@ -1,7 +1,7 @@
+#include <gtest/gtest.h>
+
 #include <array>
 #include <cstdint>
-
-#include <gtest/gtest.h>
 
 #include "proto/crc.hpp"
 
