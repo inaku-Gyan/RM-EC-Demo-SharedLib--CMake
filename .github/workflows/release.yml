@@ -1,0 +1,96 @@
+name: Release
+
+# 当 GitHub Release 发布（含预发布）时触发：从 Release 关联的 tag 检出代码，
+# 把 src/ 内容平铺到 release 分支。GitHub Release 是「发布」的唯一入口，
+on:
+  release:
+    types: [published]
+
+# 串行化所有 release job，避免并发推 release 分支竞争
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  ReleaseBranch: release
+
+  SrcCodeDir: original
+  ReleaseDir: release
+
+  ReleaseTag: ${{ github.event.release.tag_name }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # SemVer 格式校验
+      #   参考 https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+      - name: 校验 tag 符合 SemVer
+        run: |
+          set -euo pipefail
+          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if ! [[ "${{ env.ReleaseTag }}" =~ $semver ]]; then
+            echo "::error::tag '${{ env.ReleaseTag }}' 不是合法 SemVer，要求形如 v1.2.3 / v1.2.3-rc.1 / v1.2.3+build.5"
+            exit 1
+          fi
+
+      - name: Checkout the original repo
+        uses: actions/checkout@v6
+        with:
+          path: ${{ env.SrcCodeDir }}
+          ref: ${{ env.ReleaseTag }}
+          sparse-checkout: |
+            src/
+            !**/tests/**
+            !**/test/**
+            !**/test_*
+            LICENSE
+          sparse-checkout-cone-mode: false # Disable cone mode to allow for checking out single files
+
+      - name: Original commit info
+        id: original_commit_info
+        working-directory: ${{ env.SrcCodeDir }}
+        run: |
+          echo "Checked out the original repo at tag '${{ env.ReleaseTag }}'. The original repo contains:"
+          ls -A ${{ env.SrcCodeDir }}
+
+          # 输出 commit SHA
+          commit_sha=$(git rev-parse HEAD)
+          echo "Original commit SHA: $commit_sha"
+          echo "CommitSHA=$commit_sha" >> $GITHUB_ENV
+
+      - name: Checkout the release repo
+        uses: actions/checkout@v6
+        with:
+          path: ${{ env.ReleaseDir }}
+          ref: ${{ env.ReleaseBranch }}
+
+      - name: Clear the release repo
+        run: |
+          mv ${{ env.ReleaseDir }}/.git ./ReleaseGitBackup
+          rm -rf ${{ env.ReleaseDir }}/*
+          mv ./ReleaseGitBackup ${{ env.ReleaseDir }}/.git
+
+          echo "Cleaned the release directory. The release directory now contains:"
+          ls -A ${{ env.ReleaseDir }}
+
+      - name: Construct the release
+        run: |
+          #  (+) 此处使用 `*`，将不会匹配 `.` 开头的隐藏文件和目录
+          mv ${{ env.SrcCodeDir }}/src/* ${{ env.ReleaseDir }}/
+          mv ${{ env.SrcCodeDir }}/LICENSE ${{ env.ReleaseDir }}/
+
+          echo "Finished constructing the release. The release directory now contains:"
+          ls -A ${{ env.ReleaseDir }}
+
+      - name: Release
+        working-directory: ${{ env.ReleaseDir }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .
+          git commit -m "Release \`${{ env.ReleaseTag }}\`" -m "(original commit: ${{ steps.original_commit_info.outputs.CommitSHA }})"
+          git push origin ${{ env.ReleaseBranch }}
