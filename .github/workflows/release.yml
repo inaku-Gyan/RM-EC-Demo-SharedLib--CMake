@@ -55,7 +55,7 @@ jobs:
         working-directory: ${{ env.SrcCodeDir }}
         run: |
           echo "Checked out the original repo at tag '${{ env.ReleaseTag }}'. The original repo contains:"
-          ls -A ${{ env.SrcCodeDir }}
+          ls -A .
 
           # 输出 commit SHA
           commit_sha=$(git rev-parse HEAD)
