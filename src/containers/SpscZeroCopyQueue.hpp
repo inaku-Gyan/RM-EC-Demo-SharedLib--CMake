@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <cstddef>
 #include <type_traits>
@@ -15,21 +16,21 @@ class SpscZeroCopyQueue {
 
     // 多分配 1 个槽，用 (writer == reader) 表示空、(next(writer) == reader) 表示满，
     // 避免引入共享的 size_ 原子量，从而省掉每次 commit 的 RMW。
-    static constexpr std::size_t kSlots_ = kCapacity + 1;
+    static constexpr std::size_t kNSlots_ = kCapacity + 1;
 
     // 单个槽位类型（含 cache-line padding，当 kDCachePolicy != None 时）
-    using Slot_ = AlignedElement<T, AlignmentByCachePolicy<kDCachePolicy>>;
+    using TSlot_ = AlignedElement<T, AlignmentByCachePolicy<kDCachePolicy>>;
 
     static constexpr std::size_t S_next(std::size_t i) noexcept {
-        return (i + 1 == kSlots_) ? 0 : i + 1;
+        return (i + 1 == kNSlots_) ? 0 : i + 1;
     }
 
     // 生产者写、消费者读
-    ECX_ALIGNAS_DCACHE_LINE(std::atomic_size_t) writer_ { 0 };
+    ECX_ALIGNAS_DCACHE_LINE(std::atomic_size_t)           writer_{0};
     // 消费者写、生产者读
-    ECX_ALIGNAS_DCACHE_LINE(std::atomic_size_t) reader_ { 0 };
+    ECX_ALIGNAS_DCACHE_LINE(std::atomic_size_t)           reader_{0};
     // 与 writer_/reader_ 分行，避免数据写入污染其控制字段所在的缓存行
-    ECX_ALIGNAS_DCACHE_LINE(ecx::AlignedArray<T, ecx::AlignmentByCachePolicy<kDCachePolicy>, kSlots_>) buffer_{};
+    ECX_ALIGNAS_DCACHE_LINE(std::array<TSlot_, kNSlots_>) buffer_{};
 
 #if ECX_USE_USAGE_ASSERT
     // 0: idle, 0b01: reading, 0b10: writing
@@ -82,7 +83,7 @@ public:
         if constexpr (kDCachePolicy == CachePolicy::Invalidate
                       || kDCachePolicy == CachePolicy::CleanInvalidate) {
             ECX_DCACHE_INVALIDATE(
-                reinterpret_cast<uint32_t*>(const_cast<Slot_*>(&buffer_[r])), sizeof(buffer_[r])
+                reinterpret_cast<uint32_t*>(const_cast<TSlot_*>(&buffer_[r])), sizeof(buffer_[r])
             );
         }
 
@@ -143,7 +144,7 @@ public:
     std::size_t size() const noexcept {
         const auto w = writer_.load(std::memory_order_relaxed);
         const auto r = reader_.load(std::memory_order_relaxed);
-        return (w >= r) ? (w - r) : (kSlots_ - (r - w));
+        return (w >= r) ? (w - r) : (kNSlots_ - (r - w));
     }
 
     bool empty() const noexcept {
