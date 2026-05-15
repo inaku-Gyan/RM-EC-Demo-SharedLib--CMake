@@ -55,13 +55,14 @@
   #if defined(__SCB_DCACHE_LINE_SIZE) && ECX_USE_DCACHE
     #define ECX_DCACHE_LINE_SIZE __SCB_DCACHE_LINE_SIZE
   #else
-    #define ECX_DCACHE_LINE_SIZE 0 
+    #define ECX_DCACHE_LINE_SIZE 1
   #endif
 #endif
 
 #if ECX_USE_DCACHE
   // 确保类型 tp 至少对齐到 D-Cache 行大小
-  #define ECX_ALIGNAS_DCACHE_LINE(...) alignas(ECX_DCACHE_LINE_SIZE) alignas(__VA_ARGS__) __VA_ARGS__
+  #define ECX_ALIGNAS_DCACHE_LINE(...) \
+      alignas(ECX_DCACHE_LINE_SIZE) alignas(__VA_ARGS__) __VA_ARGS__
 
   // 如果启用了 D-Cache，则 CPU 和 DMA 之间的数据交换需要进行 D-Cache 清除和无效化操作，
   // 否则数据一致性无法得到保证。
@@ -70,7 +71,7 @@
 
 #else
 
-  #define ECX_ALIGNAS_DCACHE_LINE(...) alignas(0) __VA_ARGS__
+  #define ECX_ALIGNAS_DCACHE_LINE(...) alignas(__VA_ARGS__) __VA_ARGS__
 
   #define ECX_DCACHE_CLEAN(addr, size) (static_cast<void>(0))
   #define ECX_DCACHE_INVALIDATE(addr, size) (static_cast<void>(0))

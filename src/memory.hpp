@@ -51,12 +51,12 @@ enum class CachePolicy : uint8_t {
 /// 获取缓存策略对应的对齐方式（仅当启用 D-Cache 时有效）
 template <CachePolicy Policy>
 inline constexpr std::size_t AlignmentByCachePolicy =
-    Policy == CachePolicy::None ? 0 : ECX_DCACHE_LINE_SIZE;
+    Policy == CachePolicy::None ? 1 : ECX_DCACHE_LINE_SIZE;
 #else
 /// 获取缓存策略对应的对齐方式（仅当启用 D-Cache 时有效）
 template <CachePolicy Policy>
     requires(Policy == CachePolicy::None)  // 只有在不使用 D-Cache 时才允许 Policy 为 None
-inline constexpr std::size_t AlignmentByCachePolicy = 0;
+inline constexpr std::size_t AlignmentByCachePolicy = 1;
 #endif
 
 }  // namespace ecx
