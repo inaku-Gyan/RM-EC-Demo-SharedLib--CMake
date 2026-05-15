@@ -7,7 +7,7 @@
 - `src/algo/` `src/proto/` `src/rtos/` —— 库本体；**只放头文件**，新增模块直接进对应子目录即可，无需改 CMake。
 - `src/rtos/` 依赖 FreeRTOS，**当前不参与构建/测试**；clangd 已抑制其 `pp_file_not_found`。
 - `tests/` —— host 端 GoogleTest 用例，仅 `algo` + `proto`。新增用例需把 `.cpp` 文件名追加到 [tests/CMakeLists.txt](tests/CMakeLists.txt) 的 `ecx_tests` 源列表。
-- `cmake/` —— arm-none-eabi 工具链文件与交叉编译验证用的驱动 TU。
+- `cmake/` —— arm-none-eabi 工具链文件与目标平台设定。
 - 全项目语言风格：**注释一律用中文**；标识符遵循 [.clang-tidy](.clang-tidy)（类 CamelCase、函数 lower_case、私有成员 `_` 后缀、`constexpr` UPPER_CASE）。
 - 代码风格由 [.clang-format](.clang-format) 强制（Google 风、C++20、100 列）。
 - `.clang-tidy` 设了 `WarningsAsErrors: "*"`，提交前确保无 lint 失败。
@@ -42,10 +42,9 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 
 ## 关键文件
 
-- [CMakeLists.txt](CMakeLists.txt) —— 根工程，定义 INTERFACE 库 `ecx::ecx` 与 `ECX_BUILD_TESTS` / `ECX_BUILD_ARM_CHECK` 选项。
+- [CMakeLists.txt](CMakeLists.txt) —— 根工程，定义 INTERFACE 库 `ecx::ecx` 与 `ECX_BUILD_TESTS` / `ECX_BUILD_ARM_CHECK` 选项（后者会动态扫描头文件并生成检查用的 cpp）。
 - [CMakePresets.json](CMakePresets.json) —— 三个 preset 的全部配置。
 - [tests/CMakeLists.txt](tests/CMakeLists.txt) —— GoogleTest v1.15.2 via FetchContent。
 - [cmake/arm-none-eabi.cmake](cmake/arm-none-eabi.cmake) —— 交叉工具链定义。
-- [cmake/arm_compile_check.cpp](cmake/arm_compile_check.cpp) —— 驱动模板实例化与 inline 函数 codegen 的 TU。
 - [.clangd](.clangd) —— 指向 `build/test-dev`，并对 `src/rtos/.*` 抑制头缺失诊断。
 - [README.md](README.md) —— 面向人的环境/开发/发布说明。

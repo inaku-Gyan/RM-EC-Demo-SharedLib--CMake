@@ -1,6 +1,6 @@
 # RM-EC-Demo-SharedLib
 
-面向 arm-none-eabi-gcc 工具链嵌入式工程的公共 C++20 header-only 库（namespace `ecx::`）。
+面向 `arm-none-eabi-gcc` 工具链嵌入式工程的公共 C++20 header-only 库（namespace `ecx::`）。
 
 下游消费方式：通过 `release` 分支取走平铺后的头文件（详见 [发布](#发布) 章节）。本仓库根目录的 CMake 工程**不会随 release 分发**，只服务于库本身的开发与测试。
 
@@ -12,24 +12,25 @@
 | Ninja                      | 构建后端（preset 已锁定）                | 任意近代版本                         |
 | g++ / clang++              | host 端编译，跑 ctest                    | 支持 C++20（g++ ≥ 11、clang++ ≥ 14） |
 | `arm-none-eabi-gcc` 工具链 | 交叉编译验证（`build-armgcc` preset 用） | ≥ 11（C++20 支持）                   |
-| VSCode + clangd 插件       | 语言服务（项目已禁用 MS IntelliSense）   | clangd ≥ 17                          |
+| VS Code + clangd 插件      | 语言服务（项目已禁用 MS IntelliSense）   | clangd ≥ 17                          |
 
-首次使用 VSCode 打开本仓库：
-1. 装好 `.vscode/extensions.json` 推荐的插件（主要是 `llvm-vs-code-extensions.vscode-clangd`）。
-2. 把 `.vscode/settings.example.json` 复制为 `.vscode/settings.json`（已加入 `.gitignore`，每位开发者可有自己的覆盖）。
+首次使用 VS Code 打开本仓库：
+1. 安装 `.vscode/extensions.json` 推荐的插件。
+2. `cp .vscode/settings.example.json .vscode/settings.json` 以配置 VS Code 插件。
+   你可以根据个人需要调整 `settings.json`。
 3. 先执行一次 `cmake --preset test-dev`，生成 `build/test-dev/compile_commands.json`，clangd 就能开始索引。
 
-> [.clangd](.clangd) 已经把 compile_commands 路径指向 `build/test-dev/`。`src/rtos/` 因尚未挂构建，其 `FreeRTOS.h` 缺失诊断已被抑制，不影响其他文件的补全。
+> [.clangd](.clangd) 把 compile_commands 路径指向 `build/test-dev/`。
 
 ## 日常开发
 
-本仓库提供三个 preset，用「做什么」而不是「Debug/Release」来命名：
+本仓库提供三个 preset：
 
-| Preset         | 用途                                                                                                                                                | 编译配置                                                             | 跑测试？                 |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------ |
-| `test-dev`     | **日常迭代**：写代码、调测试，反馈最快                                                                                                              | `-O0 -g`（Debug）                                                    | ✅                        |
-| `test-opt`     | **优化烟雾测试**：验证 `-O3 -DNDEBUG` 不会因 UB / 误依赖 assert 而破坏行为                                                                          | `-O3 -DNDEBUG`（Release）                                            | ✅                        |
-| `build-armgcc` | **目标工具链验证**：用 arm-none-eabi-gcc + Cortex-M4F 编译 algo+proto，产出 `libecx_arm_check.a`，确认 headers 在真实嵌入式工具链上能解析与代码生成 | M4F 硬浮点、`-ffreestanding -fno-exceptions -fno-rtti`、`MinSizeRel` | ❌（无 libc，只验证编译） |
+| Preset         | 用途                                                                                                                                                                                                 | 编译配置                                                             | 跑测试？                 |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------ |
+| `test-dev`     | **日常迭代**：写代码、调测试，反馈最快                                                                                                                                                               | `-O0 -g`（Debug）                                                    | ✅                        |
+| `test-opt`     | **优化烟雾测试**：验证 `-O3 -DNDEBUG` 不会因 UB / 误依赖 assert 而破坏行为                                                                                                                           | `-O3 -DNDEBUG`（Release）                                            | ✅                        |
+| `build-armgcc` | **目标工具链验证**：用 arm-none-eabi-gcc + Cortex-M4F 编译 algo+proto，会在编译前动态生成包含 `src/` 头文件的 cpp 文件，产出 `libecx_arm_check.a`，确认 headers 在真实嵌入式工具链上能解析与代码生成 | M4F 硬浮点、`-ffreestanding -fno-exceptions -fno-rtti`、`MinSizeRel` | ❌（无 libc，只验证编译） |
 
 ### 常用命令
 
@@ -44,7 +45,12 @@ cmake --build --preset test-dev
 ctest --preset test-dev
 ```
 
-`test-opt` 与 `build-armgcc` 命令同理替换 preset 名即可。日常基本只用 `test-dev`；提 PR / 发布前应额外跑 `test-opt` 和 `build-armgcc` 作为门禁。
+`test-opt` 命令同理替换 preset 名即可。
+
+```bash
+# 验证 arm-none-eabi-gcc 工具链编译
+cmake --preset build-armgcc && cmake --build --preset build-armgcc
+```
 
 ### 加测试用例
 
