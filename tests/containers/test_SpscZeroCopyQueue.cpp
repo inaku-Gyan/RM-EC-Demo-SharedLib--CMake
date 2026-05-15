@@ -13,7 +13,7 @@ namespace {
 using ecx::SpscZeroCopyQueue;
 
 TEST(SpscZeroCopyQueueTest, EmptyOnConstruction) {
-    SpscZeroCopyQueue<int, 4> q;
+    SpscZeroCopyQueue<int, 4> const q;
     EXPECT_TRUE(q.empty());
     EXPECT_FALSE(q.full());
     EXPECT_EQ(q.size(), 0U);
@@ -106,7 +106,7 @@ TEST(SpscZeroCopyQueueTest, WrapAroundIndices) {
 
     // 按顺序读出剩余 4 个（1 个旧 + 3 个新）
     const std::array<int, 4> expected{3, 100, 101, 102};
-    for (int e : expected) {
+    for (int const e : expected) {
         const auto* r = q.read_acquire();
         ASSERT_NE(r, nullptr);
         EXPECT_EQ(*r, e);
