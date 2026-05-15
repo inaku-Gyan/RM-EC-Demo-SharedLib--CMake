@@ -11,8 +11,14 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
+file(GLOB_RECURSE TEST_FILES
+    CONFIGURE_DEPENDS
+    "test_*.cpp"
+    "*/test_*.cpp"
+)
+
 add_executable(ecx_tests
-    test_spsc_zero_copy_queue.cpp
+    ${TEST_FILES}
 )
 target_link_libraries(ecx_tests PRIVATE
     ecx::ecx
