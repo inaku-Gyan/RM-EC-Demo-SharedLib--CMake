@@ -3,7 +3,7 @@
     "clangd.arguments": [
         "--background-index", // 启用后台索引功能，以提高代码导航和智能提示的性能
         "--clang-tidy", // 启用 clang-tidy 进行代码检查
-        "--header-insertion=never"
+        "--header-insertion=iwyu", // 开启自动插入头文件功能
     ],
     // 禁用 Microsoft C/C++ 插件的 IntelliSense 功能，因为 clangd 插件已经提供了完整的代码分析和智能提示功能。
     "C_Cpp.intelliSenseEngine": "disabled",
