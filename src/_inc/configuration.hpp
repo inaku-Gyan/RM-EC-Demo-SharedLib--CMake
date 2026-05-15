@@ -1,6 +1,8 @@
 #pragma once
 
-#include "ecx_config_default.hpp"  // IWYU pragma: export
+#ifndef ECX_NO_DEFAULT_CONFIG
+  #include "ecx_config_default.hpp"  // IWYU pragma: export
+#endif
 
 // 让用户配置覆盖默认配置
 #if __has_include(<ecx_config.hpp>)
