@@ -80,3 +80,17 @@ UseTab: Never
 
 KeepEmptyLinesAtTheStartOfBlocks: true
 MaxEmptyLinesToKeep: 1
+
+# =============================================================================
+# Macro-aware formatting
+# =============================================================================
+
+TypenameMacros:
+  - ECX_ALIGNAS_DCACHE_LINE
+
+StatementMacros:
+  - ECX_USAGE_ASSERT
+  - ECX_DEV_ASSERT
+  - ECX_DCACHE_CLEAN
+  - ECX_DCACHE_INVALIDATE
+  - ECX_DCACHE_CLEAN_INVALIDATE
