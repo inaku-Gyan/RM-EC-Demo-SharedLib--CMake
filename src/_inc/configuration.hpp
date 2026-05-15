@@ -68,6 +68,7 @@
   // 否则数据一致性无法得到保证。
   #define ECX_DCACHE_CLEAN(addr, size) SCB_CleanDCache_by_Addr((addr), (size))
   #define ECX_DCACHE_INVALIDATE(addr, size) SCB_InvalidateDCache_by_Addr((addr), (size))
+  #define ECX_DCACHE_CLEAN_INVALIDATE(addr, size) SCB_CleanInvalidateDCache_by_Addr((addr), (size))
 
 #else
 
@@ -75,5 +76,6 @@
 
   #define ECX_DCACHE_CLEAN(addr, size) (static_cast<void>(0))
   #define ECX_DCACHE_INVALIDATE(addr, size) (static_cast<void>(0))
+  #define ECX_DCACHE_CLEAN_INVALIDATE(addr, size) (static_cast<void>(0))
 
 #endif
