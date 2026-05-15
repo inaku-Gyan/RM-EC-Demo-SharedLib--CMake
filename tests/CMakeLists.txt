@@ -15,6 +15,7 @@ add_executable(ecx_tests
     test_pid.cpp
     test_cobs.cpp
     test_crc.cpp
+    test_spsc_zero_copy_queue.cpp
 )
 target_link_libraries(ecx_tests PRIVATE
     ecx::ecx
