@@ -51,20 +51,28 @@
 // 对齐到 D-Cache 行大小，以避免伪共享（仅当启用 D-Cache 时有效）
 // 伪共享（false sharing）指多个处理器核心频繁访问同一缓存行中的不同变量，导致性能下降。
 // 通过将共享变量对齐到缓存行大小，可以避免这种情况。
-#ifndef ECX_ALIGNAS_DCACHE_LINE
+#ifndef ECX_DCACHE_LINE_SIZE
   #if defined(__SCB_DCACHE_LINE_SIZE) && ECX_USE_DCACHE
-    #define ECX_ALIGNAS_DCACHE_LINE alignas(__SCB_DCACHE_LINE_SIZE)
+    #define ECX_DCACHE_LINE_SIZE __SCB_DCACHE_LINE_SIZE
   #else
-    #define ECX_ALIGNAS_DCACHE_LINE
+    #define ECX_DCACHE_LINE_SIZE 0 
   #endif
 #endif
 
-// 如果启用了 D-Cache，则 CPU 和 DMA 之间的数据交换需要进行 D-Cache 清除和无效化操作，
-// 否则数据一致性无法得到保证。
 #if ECX_USE_DCACHE
+  // 确保类型 tp 至少对齐到 D-Cache 行大小
+  #define ECX_ALIGNAS_DCACHE_LINE(...) alignas(ECX_DCACHE_LINE_SIZE) alignas(__VA_ARGS__) __VA_ARGS__
+
+  // 如果启用了 D-Cache，则 CPU 和 DMA 之间的数据交换需要进行 D-Cache 清除和无效化操作，
+  // 否则数据一致性无法得到保证。
   #define ECX_DCACHE_CLEAN(addr, size) SCB_CleanDCache_by_Addr((addr), (size))
   #define ECX_DCACHE_INVALIDATE(addr, size) SCB_InvalidateDCache_by_Addr((addr), (size))
+
 #else
+
+  #define ECX_ALIGNAS_DCACHE_LINE(...) alignas(0) __VA_ARGS__
+
   #define ECX_DCACHE_CLEAN(addr, size) (static_cast<void>(0))
   #define ECX_DCACHE_INVALIDATE(addr, size) (static_cast<void>(0))
+
 #endif
