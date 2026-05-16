@@ -41,5 +41,8 @@ if(ECX_BUILD_ARM_CHECK)
     file(WRITE "${CHECK_CPP_FILE}" "${CHECK_CPP_CONTENT}")
 
     add_library(ecx_arm_check STATIC "${CHECK_CPP_FILE}")
+    target_compile_definitions(ecx_arm_check PRIVATE
+        "ECX_INC_USER_CONFIG=\"ecx_config_template.hpp\""
+    )
     target_link_libraries(ecx_arm_check PRIVATE ecx::ecx)
 endif()
