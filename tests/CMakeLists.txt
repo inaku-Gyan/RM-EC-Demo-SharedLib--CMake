@@ -88,7 +88,7 @@ endfunction()
 # 自动 add_subdirectory：unit/ 下任何带 CMakeLists.txt 的子目录都纳入。
 # 仅做"目录是否参与构建"的判定，不揣测目录里应该产生哪些 exec。
 # ---------------------------------------------------------------------------
-file(GLOB _module_paths LIST_DIRECTORIES true CONFIGURE_DEPENDS
+file(GLOB_RECURSE _module_paths LIST_DIRECTORIES true CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/unit/*"
 )
 foreach(_module_path IN LISTS _module_paths)
