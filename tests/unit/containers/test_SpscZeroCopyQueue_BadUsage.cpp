@@ -6,7 +6,7 @@ namespace {
 
 using ecx::SpscZeroCopyQueue;
 
-// 仅在 ECX_USE_USAGE_ASSERT=1 变体编译，验证对队列的误用会触发断言（std::abort）。
+// 仅在 ECX_USE_USAGE_CHECK=1 变体编译，验证对队列的误用会触发断言（std::abort）。
 // 本变体 ecx_config.hpp 覆盖了 ECX_USAGE_ASSERT，使其不依赖 NDEBUG。
 
 TEST(SpscZeroCopyQueueUsageAssertDeathTest, ReadAcquireTwiceWithoutCommit) {

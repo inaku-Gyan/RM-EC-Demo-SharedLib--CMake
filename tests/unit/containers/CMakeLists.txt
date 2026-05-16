@@ -5,11 +5,11 @@ ecx_add_test_executable(
     PREFIX  "SpscZeroCopyQueue::DefaultConfig::"
 )
 
-# General config 下的基础测试（启用 USAGE_ASSERT + DEV_DEBUG，含死亡测试）
+# General config 下的基础测试（启用 USAGE_ASSERT + DEV_DEBUG）
 ecx_add_test_executable(
     NAME    test_SpscZeroCopyQueue_general
     SOURCES test_SpscZeroCopyQueue.cpp
-            test_SpscZeroCopyQueue_Death.cpp
+            test_SpscZeroCopyQueue_BadUsage.cpp
     CONFIG  "common/ecx_config_general.hpp"
     PREFIX  "SpscZeroCopyQueue::"
 )
@@ -18,6 +18,6 @@ ecx_add_test_executable(
 ecx_add_test_executable(
     NAME    test_SpscZeroCopyQueue_no_usage_check
     SOURCES test_SpscZeroCopyQueue.cpp
-    CONFIG  "common/ecx_config_no_usage_assert.hpp"
+    CONFIG  "common/ecx_config_no_usage_check.hpp"
     PREFIX  "SpscZeroCopyQueue::NoUsageCheck::"
 )

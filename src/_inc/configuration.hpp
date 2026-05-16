@@ -28,14 +28,14 @@
 
 //// 用户使用 ECX 时的断言（检查用户对 ECX 的使用是否正确） ////
 
-#ifndef ECX_USE_USAGE_ASSERT
-  #define ECX_USE_USAGE_ASSERT 0
+#ifndef ECX_USE_USAGE_CHECK
+  #define ECX_USE_USAGE_CHECK 0
 #endif
 
-#if ECX_USE_USAGE_ASSERT && !defined(ECX_USAGE_ASSERT)
+#if ECX_USE_USAGE_CHECK && !defined(ECX_USAGE_ASSERT)
   #include <cassert>
   #define ECX_USAGE_ASSERT(expr) assert(expr)
-#elif ECX_USE_USAGE_ASSERT == 0
+#elif ECX_USE_USAGE_CHECK == 0
   #define ECX_USAGE_ASSERT(expr) (static_cast<void>(0))
 #endif
 

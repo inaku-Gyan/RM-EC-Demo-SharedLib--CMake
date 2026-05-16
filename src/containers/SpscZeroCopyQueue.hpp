@@ -32,7 +32,7 @@ class SpscZeroCopyQueue {
     // 与 writer_/reader_ 分行，避免数据写入污染其控制字段所在的缓存行
     ECX_ALIGNAS_DCACHE_LINE(std::array<TSlot_, kNSlots_>) buffer_{};
 
-#if ECX_USE_USAGE_ASSERT
+#if ECX_USE_USAGE_CHECK
     // 0: idle, 0b01: reading, 0b10: writing
     // 读位仅由消费者改、写位仅由生产者改，两位互不相干，无需 acquire/release
     mutable std::atomic_uint8_t state_{0};
@@ -48,7 +48,7 @@ class SpscZeroCopyQueue {
     bool M_is_writing() const { return (state_.load(std::memory_order_relaxed) & 0b10) != 0; }
 
     bool M_is_reading() const { return (state_.load(std::memory_order_relaxed) & 0b01) != 0; }
-#endif  // ECX_USE_USAGE_ASSERT
+#endif  // ECX_USE_USAGE_CHECK
 
 public:
     // 默认构造：对 Invalidate / CleanInvalidate 策略，把 buffer_{} 零初始化产生的
@@ -74,9 +74,9 @@ public:
             return nullptr;  // 队列为空
         }
 
-#if ECX_USE_USAGE_ASSERT
+#if ECX_USE_USAGE_CHECK
         M_read_begin();
-#endif  // ECX_USE_USAGE_ASSERT
+#endif  // ECX_USE_USAGE_CHECK
 
         // 外设（DMA 等）已把数据写入主存；CPU 的 D-Cache 中本槽位可能持有 stale 行。
         // invalidate 丢弃这些行，让随后用户解引用返回值时从主存拉取新数据。
@@ -98,9 +98,9 @@ public:
         // 生产者看到 reader_ 推进后，才可以安全覆写之前的那个槽
         reader_.store(S_next(r), std::memory_order_release);
 
-#if ECX_USE_USAGE_ASSERT
+#if ECX_USE_USAGE_CHECK
         M_read_end();
-#endif  // ECX_USE_USAGE_ASSERT
+#endif  // ECX_USE_USAGE_CHECK
     }
 
     T* write_acquire() noexcept {
@@ -113,9 +113,9 @@ public:
             return nullptr;  // 队列已满
         }
 
-#if ECX_USE_USAGE_ASSERT
+#if ECX_USE_USAGE_CHECK
         M_write_begin();
-#endif  // ECX_USE_USAGE_ASSERT
+#endif  // ECX_USE_USAGE_CHECK
 
         return &buffer_[w].value;
     }
@@ -136,9 +136,9 @@ public:
         // release 与消费者 read_acquire 中 writer_.load(acquire) 配对
         writer_.store(S_next(w), std::memory_order_release);
 
-#if ECX_USE_USAGE_ASSERT
+#if ECX_USE_USAGE_CHECK
         M_write_end();
-#endif  // ECX_USE_USAGE_ASSERT
+#endif  // ECX_USE_USAGE_CHECK
     }
 
     std::size_t size() const noexcept {
