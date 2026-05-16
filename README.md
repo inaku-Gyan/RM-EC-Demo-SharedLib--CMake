@@ -2,7 +2,7 @@
 
 面向 `arm-none-eabi-gcc` 工具链嵌入式工程的公共 C++20 header-only 库（namespace `ecx::`）。
 
-下游消费方式：通过 `release` 分支取走平铺后的头文件（详见 [发布](#发布) 章节）。本仓库根目录的 CMake 工程**不会随 release 分发**，只服务于库本身的开发与测试。
+下游消费方式：通过 `release` 分支取走平铺后的头文件（详见 [发布](#发布) 章节）。本仓库根目录的 CMake 工程**不会随 `release` 分发**，只服务于库本身的开发与测试。
 
 ## 环境准备
 
@@ -15,27 +15,45 @@
 | VS Code + clangd 插件      | 语言服务（项目已禁用 MS IntelliSense）   | clangd ≥ 17                          |
 
 首次使用 VS Code 打开本仓库：
-1. 安装 `.vscode/extensions.json` 推荐的插件。
-2. `cp .vscode/settings.example.json .vscode/settings.json` 以配置 VS Code 插件。
-   你可以根据个人需要调整 `settings.json`。
-3. 先执行一次 `cmake --preset test-dev`，生成 `build/test-dev/compile_commands.json`，clangd 就能开始索引。
 
-> [.clangd](.clangd) 把 compile_commands 路径指向 `build/test-dev/`。
+##### 1. VS Code 配置
+
+安装 `.vscode/extensions.json` 推荐的插件。
+
+VS Code 工作区配置：
+```bash
+cp .vscode/settings.example.json .vscode/settings.json
+```
+之后，你可以根据个人需要调整 `settings.json`。
+
+##### 2. Clangd 语言服务器索引准备
+
+Clangd 需要 `compile_commands.json`（编译数据库）来确定编译指令，以提供正确的语言服务功能（如跳转定义、自动补全、错误检查等）。本仓库使用借助 CMake Presets 生成 `compile_commands.json`。
+
+```bash
+# 生成本项目业务代码部分使用的 compile_commands.json
+cmake --preset build-armgcc
+
+# 生成测试代码使用的 compile_commands.json
+cmake --preset test-dev
+```
+
+> Clangd 自动根据 `.clangd` 文件中配置的路径寻找 `compile_commands.json`。
 
 ## 日常开发
 
 本仓库提供三个 preset：
 
-| Preset         | 用途                                                                                                                                                                                                 | 编译配置                                                             | 跑测试？                 |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------ |
-| `test-dev`     | **日常迭代**：写代码、调测试，反馈最快                                                                                                                                                               | `-O0 -g`（Debug）                                                    | ✅                        |
-| `test-opt`     | **优化烟雾测试**：验证 `-O3 -DNDEBUG` 不会因 UB / 误依赖 assert 而破坏行为                                                                                                                           | `-O3 -DNDEBUG`（Release）                                            | ✅                        |
-| `build-armgcc` | **目标工具链验证**：用 arm-none-eabi-gcc + Cortex-M4F 编译 algo+proto，会在编译前动态生成包含 `src/` 头文件的 cpp 文件，产出 `libecx_arm_check.a`，确认 headers 在真实嵌入式工具链上能解析与代码生成 | M4F 硬浮点、`-ffreestanding -fno-exceptions -fno-rtti`、`MinSizeRel` | ❌（无 libc，只验证编译） |
+| Preset         | 用途                                                                                                                                                                                                 | 编译配置                                                                 | 跑测试？        |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------- |
+| `test-dev`     | **日常迭代**：写代码、调测试，反馈最快                                                                                                                                                               | `-O0 -g`（Debug）                                                        | ✅               |
+| `test-opt`     | **优化烟雾测试**：验证 `-O3 -DNDEBUG` 不会因 UB / 误依赖 assert 而破坏行为                                                                                                                           | `-O3 -DNDEBUG`（Release）                                                | ✅               |
+| `build-armgcc` | **目标工具链验证**：用 arm-none-eabi-gcc + Cortex-M4F 编译 algo+proto，会在编译前动态生成包含 `src/` 头文件的 cpp 文件，产出 `libecx_arm_check.a`，确认 headers 在真实嵌入式工具链上能解析与代码生成 | M4F 硬浮点、`--specs=nano.specs -fno-exceptions -fno-rtti`、`MinSizeRel` | ❌（只验证编译） |
 
 ### 常用命令
 
 ```bash
-# 配置（生成 build/<preset>/，包括 compile_commands.json）
+# 配置/更换 preset（生成 build/<preset>/，包括 compile_commands.json）
 cmake --preset test-dev
 
 # 编译（首次会经 FetchContent 拉 GoogleTest）
@@ -45,7 +63,7 @@ cmake --build --preset test-dev
 ctest --preset test-dev
 ```
 
-`test-opt` 命令同理替换 preset 名即可。
+`test-opt` 命令同理替换 preset 名即可。更换 preset 后，以上三步必须按顺序执行。
 
 ```bash
 # 验证 arm-none-eabi-gcc 工具链编译
@@ -55,9 +73,9 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 ### 加测试用例
 
 测试源码位于 [tests/](tests/)。新增用例：
-1. 在 [tests/](tests/) 下新建 `test_xxx.cpp`，沿用 GoogleTest 的 `TEST(Suite, Name) { ... }` 写法。
-2. 把文件名追加到 [tests/CMakeLists.txt](tests/CMakeLists.txt) 中 `add_executable(ecx_tests ...)` 的源文件列表里。
-3. 重新 build + ctest 即可。`gtest_discover_tests` 会自动把新用例注册到 CTest。
+1. 在 [tests/](tests/) 下的子目录中新建 `test_xxx.cpp`，沿用 GoogleTest 的 `TEST(Suite, Name) { ... }` 写法。
+2. 把文件名追加到子目录 `CMakeLists.txt` 中。
+3. 重新 build + ctest 即可。
 
 ### 添加新模块到库
 
@@ -80,21 +98,20 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 3. 切到 `release` 分支，**清空**该分支内容（保留 `.git/`），将 `src/*` **平铺**到分支根，并附上 `LICENSE`。
 4. 以 `github-actions[bot]` 身份提交，commit message 标注「源 commit SHA」，推送到 `origin/release`。
 
-最终结果：`release` 分支根目录直接是 `algo/`、`proto/`、`rtos/` 等头文件子目录加 `LICENSE`。下游可以把 `release` 分支作为 git submodule 引入，或拉取后直接 `add_subdirectory` / 加入 include path。
+最终结果：`release` 分支根目录直接是本项目用于分发的业务代码。下游可以把 `release` 分支作为 git submodule 引入，或拉取后直接 `add_subdirectory` / 加入 include path。
 
 ### 发布步骤（维护者）
 
-1. 在 main 分支确认要发布的 commit；本地跑过 `test-dev`、`test-opt`、`build-armgcc` 三档全部 PASS。
+1. 在 `main` 分支确认要发布的 commit；本地跑过 `test-dev`、`test-opt`、`build-armgcc` 三档全部 PASS。
 2. 在 GitHub 仓库页面打 **Draft a new release**：
    - **Tag**：形如 `v1.2.3`、`v1.2.3-beta.1`、`v1.2.3-alpha.1`（必须遵循 [SemVer 规范](https://semver.org/)，但以 `v` 开头）；
    - **Target**：要发布的 commit / branch；
    - **Title / Description**：建议放 changelog 摘要。
-3. 点 **Publish release**。
-4. 在 Actions 标签下盯着 "Release" workflow 跑完。
-5. 跑完后查看 `release` 分支：应当只有平铺后的头文件、`LICENSE`，以及一条形如 `Release v1.2.3 (original commit: <sha>)` 的提交。
+3. 点击 **Publish release**。
+4. 检查 workflow 运行状态和 `release` 分支，确保发布成功。
 
 ### 注意事项
 
 - **不要往 `release` 分支手工 push**。该分支由 workflow 全量重写，手工提交会被下一次发布覆盖。
-- **不要发布带工具链/测试基建的内容到 release**。`tests/`、`cmake/`、`CMakeLists.txt`、`CMakePresets.json`、`.clangd` 等都在 sparse-checkout 之外，已天然排除。如新增「不希望分发的目录」，无需额外配置（默认就不分发）；如新增「希望分发的目录」，请放进 `src/` 下而不是新建顶级目录。
+- **不要发布带工具链/测试基建的内容到 `release`**。`tests/`、`cmake/`、`CMakeLists.txt`、`CMakePresets.json`、`.clangd` 等都在 sparse-checkout 之外，已天然排除。
 - **并发**：workflow 用 `concurrency: release` 串行化，多次连续发布不会互相覆盖中间态。
