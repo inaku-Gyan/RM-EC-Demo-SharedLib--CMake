@@ -6,7 +6,14 @@
 
 - `src/algo/` `src/proto/` `src/rtos/` —— 库本体；**只放头文件**，新增模块直接进对应子目录即可，无需改 CMake。
 - `src/rtos/` 依赖 FreeRTOS，**当前不参与构建/测试**；clangd 已抑制其 `pp_file_not_found`。
-- `tests/` —— host 端 GoogleTest 用例，仅 `algo` + `proto`。新增用例需把 `.cpp` 文件名追加到 [tests/CMakeLists.txt](tests/CMakeLists.txt) 的 `ecx_tests` 源列表。
+- `tests/` —— host 端 GoogleTest 用例。结构与 `src/` 镜像、按 config 变体分层；目录约定见 [tests/CMakeLists.txt](tests/CMakeLists.txt) 顶部注释。要点：
+  - 模块默认测试：`tests/unit/<module>/test_*.cpp`，新增文件自动被收（`CONFIGURE_DEPENDS` + GLOB），无需改 CMake。
+  - 模块的 config 变体：`tests/unit/<module>/<variant>/test_*.cpp`，对应 config 优先取同目录 `ecx_config.hpp`，否则回退到共享 `tests/configs/<variant>/ecx_config.hpp`。
+  - 跨模块共享 config：`tests/configs/<variant>/ecx_config.hpp`（仅放 config，不放测试代码）。
+  - 跨模块公用测试工具：`tests/support/`（headers-only，自动暴露为 `ecx_test_support`）。
+  - 模块本地 helper headers：直接放模块目录，`test_*.cpp` 之外的文件不会被当作测试源。
+  - 集成测试：`tests/integration/test_*.cpp`。
+  - ctest 命名：`<module>::<variant?>::<gtest_suite>.<test_name>`。
 - `cmake/` —— arm-none-eabi 工具链文件与目标平台设定。
 - 全项目语言风格：**注释一律用中文**；标识符遵循 [.clang-tidy](.clang-tidy)（类 CamelCase、函数 lower_case、私有成员 `_` 后缀、`constexpr` UPPER_CASE）。
 - 代码风格由 [.clang-format](.clang-format) 强制（Google 风、C++20、100 列）。
@@ -44,7 +51,7 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 
 - [CMakeLists.txt](CMakeLists.txt) —— 根工程，定义 INTERFACE 库 `ecx::ecx` 与 `ECX_BUILD_TESTS` / `ECX_BUILD_ARM_CHECK` 选项（后者会动态扫描头文件并生成检查用的 cpp）。
 - [CMakePresets.json](CMakePresets.json) —— 三个 preset 的全部配置。
-- [tests/CMakeLists.txt](tests/CMakeLists.txt) —— GoogleTest v1.15.2 via FetchContent。
+- [tests/CMakeLists.txt](tests/CMakeLists.txt) —— GoogleTest v1.17.0 via FetchContent；按目录自动发现模块与变体并生成多个 exec。
 - [cmake/arm-none-eabi.cmake](cmake/arm-none-eabi.cmake) —— 交叉工具链定义。
 - [.clangd](.clangd) —— 指向 `build/test-dev`，并对 `src/rtos/.*` 抑制头缺失诊断。
 - [README.md](README.md) —— 面向人的环境/开发/发布说明。
