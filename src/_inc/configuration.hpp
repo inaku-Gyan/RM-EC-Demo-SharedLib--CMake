@@ -4,9 +4,13 @@
   #include "ecx_config_default.hpp"  // IWYU pragma: export
 #endif
 
+#ifndef ECX_INC_USER_CONFIG
+  #define ECX_INC_USER_CONFIG "ecx_config.hpp"
+#endif
+
 // 让用户配置覆盖默认配置
-#if __has_include(<ecx_config.hpp>)
-  #include <ecx_config.hpp>  // IWYU pragma: export
+#if __has_include(ECX_INC_USER_CONFIG)
+  #include ECX_INC_USER_CONFIG  // IWYU pragma: export
 #endif
 
 //// ECX 库内部使用的断言（仅在开发 ECX 库时启用） ////
