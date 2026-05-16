@@ -6,14 +6,14 @@
 #include <thread>
 #include <vector>
 
-#include "containers/SpscZeroCopyQueue.hpp"
+#include "containers/SpscZeroCopyAtomicQueue.hpp"
 
 namespace {
 
-using ecx::SpscZeroCopyQueue;
+using ecx::SpscZeroCopyAtomicQueue;
 
-TEST(SpscZeroCopyQueueTest, EmptyOnConstruction) {
-    SpscZeroCopyQueue<int, 4> const q;
+TEST(SpscZeroCopyAtomicQueueTest, EmptyOnConstruction) {
+    SpscZeroCopyAtomicQueue<int, 4> const q;
     EXPECT_TRUE(q.empty());
     EXPECT_FALSE(q.full());
     EXPECT_EQ(q.size(), 0U);
@@ -21,8 +21,8 @@ TEST(SpscZeroCopyQueueTest, EmptyOnConstruction) {
     EXPECT_EQ(decltype(q)::capacity(), 4U);
 }
 
-TEST(SpscZeroCopyQueueTest, SingleWriteRead) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueTest, SingleWriteRead) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
 
     auto* w = q.write_acquire();
     ASSERT_NE(w, nullptr);
@@ -41,8 +41,8 @@ TEST(SpscZeroCopyQueueTest, SingleWriteRead) {
     EXPECT_EQ(q.size(), 0U);
 }
 
-TEST(SpscZeroCopyQueueTest, FifoOrdering) {
-    SpscZeroCopyQueue<int, 8> q;
+TEST(SpscZeroCopyAtomicQueueTest, FifoOrdering) {
+    SpscZeroCopyAtomicQueue<int, 8> q;
 
     for (int i = 0; i < 5; ++i) {
         auto* w = q.write_acquire();
@@ -61,9 +61,9 @@ TEST(SpscZeroCopyQueueTest, FifoOrdering) {
     EXPECT_TRUE(q.empty());
 }
 
-TEST(SpscZeroCopyQueueTest, FullExactlyAtCapacity) {
+TEST(SpscZeroCopyAtomicQueueTest, FullExactlyAtCapacity) {
     // capacity = 4 应能精确容纳 4 个元素
-    SpscZeroCopyQueue<int, 4> q;
+    SpscZeroCopyAtomicQueue<int, 4> q;
     for (int i = 0; i < 4; ++i) {
         auto* w = q.write_acquire();
         ASSERT_NE(w, nullptr) << "at i=" << i;
@@ -75,8 +75,8 @@ TEST(SpscZeroCopyQueueTest, FullExactlyAtCapacity) {
     EXPECT_EQ(q.write_acquire(), nullptr);  // 第 5 次写应失败
 }
 
-TEST(SpscZeroCopyQueueTest, WrapAroundIndices) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueTest, WrapAroundIndices) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
 
     // 写满 4 个
     for (int i = 0; i < 4; ++i) {
@@ -115,8 +115,8 @@ TEST(SpscZeroCopyQueueTest, WrapAroundIndices) {
     EXPECT_TRUE(q.empty());
 }
 
-TEST(SpscZeroCopyQueueTest, SizeAndEmptyTrackOperations) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueTest, SizeAndEmptyTrackOperations) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
     EXPECT_TRUE(q.empty());
 
     auto* w = q.write_acquire();
@@ -135,10 +135,10 @@ TEST(SpscZeroCopyQueueTest, SizeAndEmptyTrackOperations) {
     EXPECT_EQ(q.size(), 0U);
 }
 
-TEST(SpscZeroCopyQueueTest, ZeroCopyPayloadIntegrity) {
+TEST(SpscZeroCopyAtomicQueueTest, ZeroCopyPayloadIntegrity) {
     // 验证较大 POD 类型直接在槽位上读写，内容完整
     using Payload = std::array<std::uint8_t, 32>;
-    SpscZeroCopyQueue<Payload, 4> q;
+    SpscZeroCopyAtomicQueue<Payload, 4> q;
 
     auto* w = q.write_acquire();
     ASSERT_NE(w, nullptr);
@@ -153,9 +153,9 @@ TEST(SpscZeroCopyQueueTest, ZeroCopyPayloadIntegrity) {
     q.read_commit();
 }
 
-TEST(SpscZeroCopyQueueTest, ManyWrapAroundCycles) {
+TEST(SpscZeroCopyAtomicQueueTest, ManyWrapAroundCycles) {
     // 反复写满-读空，验证多轮绕回不丢数据、不串数据
-    SpscZeroCopyQueue<int, 4> q;
+    SpscZeroCopyAtomicQueue<int, 4> q;
     constexpr int             kCycles      = 50;
     constexpr int             kPerCycle    = 4;
     int                       next_written = 0;
@@ -178,11 +178,11 @@ TEST(SpscZeroCopyQueueTest, ManyWrapAroundCycles) {
     EXPECT_TRUE(q.empty());
 }
 
-TEST(SpscZeroCopyQueueTest, ConcurrentProducerConsumer) {
+TEST(SpscZeroCopyAtomicQueueTest, ConcurrentProducerConsumer) {
     // 并发 SPSC：生产者从一个线程持续写入，消费者从另一个线程持续读出，
     // 验证不丢数据、不重复、FIFO 顺序保持
     constexpr std::uint32_t              kN = 100'000;
-    SpscZeroCopyQueue<std::uint32_t, 64> q;
+    SpscZeroCopyAtomicQueue<std::uint32_t, 64> q;
 
     std::thread producer([&] {
         for (std::uint32_t i = 0; i < kN; ++i) {

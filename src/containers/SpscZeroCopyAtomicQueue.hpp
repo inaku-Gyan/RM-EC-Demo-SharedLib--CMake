@@ -12,7 +12,7 @@ namespace ecx {
 
 template <typename T, std::size_t kCapacity, CachePolicy kDCachePolicy = CachePolicy::None>
     requires(std::is_trivially_copyable_v<T> && std::is_trivially_destructible_v<T>)
-class SpscZeroCopyQueue {
+class SpscZeroCopyAtomicQueue {
 
     // 多分配 1 个槽，用 (writer == reader) 表示空、(next(writer) == reader) 表示满，
     // 避免引入共享的 size_ 原子量，从而省掉每次 commit 的 RMW。
@@ -53,7 +53,7 @@ class SpscZeroCopyQueue {
 public:
     // 默认构造：对 Invalidate / CleanInvalidate 策略，把 buffer_{} 零初始化产生的
     // 「脏零」cache 行 clean 到主存，避免后续被驱逐覆盖外设写入的数据。
-    SpscZeroCopyQueue() noexcept {
+    SpscZeroCopyAtomicQueue() noexcept {
         if constexpr (kDCachePolicy == CachePolicy::Invalidate
                       || kDCachePolicy == CachePolicy::CleanInvalidate) {
             ECX_DCACHE_CLEAN(reinterpret_cast<uint32_t*>(buffer_.data()), sizeof(buffer_));

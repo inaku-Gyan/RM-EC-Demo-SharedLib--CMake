@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 
-#include "containers/SpscZeroCopyQueue.hpp"
+#include "containers/SpscZeroCopyAtomicQueue.hpp"
 
 namespace {
 
-using ecx::SpscZeroCopyQueue;
+using ecx::SpscZeroCopyAtomicQueue;
 
-TEST(SpscZeroCopyQueueBadUsageDeathTest, ReadAcquireTwiceWithoutCommit) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueBadUsageDeathTest, ReadAcquireTwiceWithoutCommit) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
 
     // 先写入一个元素，让随后首次 read_acquire 真正进入 reading 状态
     auto* w = q.write_acquire();
@@ -22,8 +22,8 @@ TEST(SpscZeroCopyQueueBadUsageDeathTest, ReadAcquireTwiceWithoutCommit) {
     EXPECT_DEATH({ (void)q.read_acquire(); }, "");
 }
 
-TEST(SpscZeroCopyQueueBadUsageDeathTest, WriteAcquireTwiceWithoutCommit) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueBadUsageDeathTest, WriteAcquireTwiceWithoutCommit) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
     [[maybe_unused]]
     auto* w = q.write_acquire();
     ASSERT_NE(w, nullptr);
@@ -31,26 +31,26 @@ TEST(SpscZeroCopyQueueBadUsageDeathTest, WriteAcquireTwiceWithoutCommit) {
     EXPECT_DEATH({ (void)q.write_acquire(); }, "");
 }
 
-TEST(SpscZeroCopyQueueBadUsageDeathTest, ReadCommitWithoutAcquire) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueBadUsageDeathTest, ReadCommitWithoutAcquire) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
     EXPECT_DEATH({ q.read_commit(); }, "");
 }
 
-TEST(SpscZeroCopyQueueBadUsageDeathTest, WriteCommitWithoutAcquire) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueBadUsageDeathTest, WriteCommitWithoutAcquire) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
     EXPECT_DEATH({ q.write_commit(); }, "");
 }
 
 // 失败的 acquire（空队列读 / 满队列写）不应进入 reading/writing 状态，
 // 因此可以重复调用而不触发断言。
-TEST(SpscZeroCopyQueueBadUsageTest, ReadAcquireOnEmptyDoesNotEnterReadState) {
-    SpscZeroCopyQueue<int, 4> const q;
+TEST(SpscZeroCopyAtomicQueueBadUsageTest, ReadAcquireOnEmptyDoesNotEnterReadState) {
+    SpscZeroCopyAtomicQueue<int, 4> const q;
     EXPECT_EQ(q.read_acquire(), nullptr);
     EXPECT_EQ(q.read_acquire(), nullptr);
 }
 
-TEST(SpscZeroCopyQueueBadUsageTest, WriteAcquireOnFullDoesNotEnterWriteState) {
-    SpscZeroCopyQueue<int, 4> q;
+TEST(SpscZeroCopyAtomicQueueBadUsageTest, WriteAcquireOnFullDoesNotEnterWriteState) {
+    SpscZeroCopyAtomicQueue<int, 4> q;
     for (int i = 0; i < 4; ++i) {
         auto* w = q.write_acquire();
         ASSERT_NE(w, nullptr);

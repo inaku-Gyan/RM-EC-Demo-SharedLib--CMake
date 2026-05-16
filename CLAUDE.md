@@ -14,7 +14,7 @@
   - 模块本地 helper headers：直接放模块目录，模块 CMakeLists 决定哪些源进 exec。
   - 集成测试：`tests/integration/CMakeLists.txt`（按需创建，顶层自动 add_subdirectory）。
   - 新增模块只需 `mkdir tests/unit/<M>` + 写 `tests/unit/<M>/CMakeLists.txt`，顶层 foreach 自动接住。
-  - ctest 命名：在 CMakeLists 里用 `PREFIX "<module>::<variant?>::"` 显式给出，例如 `containers::usage_assert::SpscZeroCopyQueueTest.X`。
+  - ctest 命名：在 CMakeLists 里用 `PREFIX "<module>::<variant?>::"` 显式给出，例如 `containers::usage_assert::SpscZeroCopyAtomicQueueTest.X`。
 - `cmake/` —— arm-none-eabi 工具链文件与目标平台设定。
 - 全项目语言风格：**注释一律用中文**；标识符遵循 [.clang-tidy](.clang-tidy)（类 CamelCase、函数 lower_case、私有成员 `_` 后缀、`constexpr` UPPER_CASE）。
 - 代码风格由 [.clang-format](.clang-format) 强制（Google 风、C++20、100 列）。
