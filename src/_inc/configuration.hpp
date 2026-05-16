@@ -19,7 +19,7 @@
 #if ECX_USER_CONFIG_INCLUDED == 0 && ECX_USE_USER_CONFIG == 1
   // 让用户配置覆盖默认配置
   #if __has_include(ECX_INC_USER_CONFIG)
-    #include ECX_INC_USER_CONFIG  // IWYU pragma: export
+    #include ECX_INC_USER_CONFIG  // IWYU pragma: keep
     #undef ECX_USER_CONFIG_INCLUDED
     #define ECX_USER_CONFIG_INCLUDED 1
   #endif
@@ -62,7 +62,7 @@
 /********************************************/
 
 #ifdef ECX_INC_CMSIS_DEVICE_HEADER
-  #include ECX_INC_CMSIS_DEVICE_HEADER
+  #include ECX_INC_CMSIS_DEVICE_HEADER  // IWYU pragma: keep
 #endif
 
 // Cortex-M7 有 D-Cache，而 Cortex-M4 没有。
