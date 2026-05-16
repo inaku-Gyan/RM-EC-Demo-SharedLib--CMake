@@ -12,18 +12,20 @@ FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
 # ---------------------------------------------------------------------------
-# 目录约定（与 src/<module>/ 镜像）
+# 目录约定
 #   tests/
-#   ├── support/                # 跨模块公用测试工具 (headers-only) → ecx_test_support
-#   ├── configs/<V>/ecx_config.hpp
-#   │                           # 跨模块共享的 ecx_config.hpp 变体
-#   ├── unit/<M>/test_*.cpp     # 模块 M 在默认 config 下的单元测试
-#   ├── unit/<M>/<V>/test_*.cpp # 模块 M 在变体 V 下的额外测试
-#   ├── unit/<M>/<V>/ecx_config.hpp
-#   │                           # （可选）模块本地 config，优先于 configs/<V>/
-#   └── integration/test_*.cpp  # 跨模块集成测试
+#   ├── support/                            # 跨模块公用测试工具 (headers-only) → ecx_test_support
+#   ├── configs/                            # 跨模块共享 config 头（扁平、统一命名）
+#   │   └── ecx_config_<name>.hpp
+#   ├── unit/<module>/
+#   │   ├── CMakeLists.txt                  # 该模块显式声明它的所有测试 exec
+#   │   ├── test_*.cpp                      # 测试源（变体专属与默认同层）
+#   │   └── ecx_config_<name>.hpp           # （可选）模块本地 config，优先于共享
+#   └── integration/
+#       └── CMakeLists.txt                  # （可选）按需创建
 #
-# 模块根下保留名 `support` 不视为变体，留给模块本地 helper headers。
+# 测试 exec 与 config 的对应关系完全由模块 CMakeLists.txt 显式声明，
+# 顶层只做：定义工具/helper + 自动 add_subdirectory 带 CMakeLists.txt 的模块。
 # ---------------------------------------------------------------------------
 
 # 跨模块公用测试工具：INTERFACE 库，被所有测试可执行文件 link
@@ -36,109 +38,75 @@ target_link_libraries(ecx_test_support INTERFACE
     GTest::gmock
 )
 
-# 创建一个单元测试可执行文件。
-#   ecx_add_unit_test_executable(<module> [<variant>])
+# 共享 config 头目录（供 helper 加进 PRIVATE include path）
+set(ECX_TEST_SHARED_CONFIGS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/configs")
+
+# ---------------------------------------------------------------------------
+# 声明一个测试可执行文件。
+#   ecx_add_test_executable(
+#       NAME    <exec_name>
+#       SOURCES <src1> [<src2> ...]
+#       [CONFIG <ecx_config_xxx.hpp>]   # 可选；通过 ECX_INC_USER_CONFIG 注入
+#                                       # （不传则走 ecx_config_default.hpp）
+#       [PREFIX <ctest_prefix>]         # 可选；默认 "<NAME>::"
+#   )
 # 行为：
-#   - 不提供 variant：编 tests/unit/<module>/test_*.cpp，不覆盖 ecx_config.hpp。
-#     exec 名 ecx_tests_<module>，ctest 前缀 "<module>::"。
-#   - 提供 variant：编 tests/unit/<module>/test_*.cpp + tests/unit/<module>/<variant>/test_*.cpp。
-#     ecx_config.hpp 解析：模块本地 (tests/unit/<module>/<variant>/) → 共享 (tests/configs/<variant>/) → FATAL_ERROR。
-#     exec 名 ecx_tests_<module>_<variant>，ctest 前缀 "<module>::<variant>::"。
-#   - 若没有任何测试源，跳过生成 exec。
-function(ecx_add_unit_test_executable module)
-    set(variant "${ARGN}")
+#   - 模块目录与共享 configs/ 都在 PRIVATE include 路径上，
+#     所以 CONFIG 字符串既可以指向模块本地 ecx_config_*.hpp，
+#     也可以指向 tests/configs/ 下的共享 ecx_config_*.hpp。
+#   - 不传 CONFIG 时 ECX_INC_USER_CONFIG 保持默认值 "ecx_config.hpp"，
+#     在测试 include 路径里找不到此文件 → __has_include 返回 false → 默认 config。
+# ---------------------------------------------------------------------------
+function(ecx_add_test_executable)
+    cmake_parse_arguments(ARG "" "NAME;CONFIG;PREFIX" "SOURCES" ${ARGN})
 
-    set(module_dir "${CMAKE_CURRENT_SOURCE_DIR}/unit/${module}")
-    file(GLOB base_sources CONFIGURE_DEPENDS "${module_dir}/test_*.cpp")
-
-    set(variant_sources "")
-    set(config_dir "")
-
-    if(variant STREQUAL "")
-        set(exec_name "ecx_tests_${module}")
-        set(test_prefix "${module}::")
-    else()
-        set(exec_name "ecx_tests_${module}_${variant}")
-        set(test_prefix "${module}::${variant}::")
-
-        file(GLOB variant_sources CONFIGURE_DEPENDS
-            "${module_dir}/${variant}/test_*.cpp"
-        )
-
-        # config 优先级：模块本地 > 共享
-        if(EXISTS "${module_dir}/${variant}/ecx_config.hpp")
-            set(config_dir "${module_dir}/${variant}")
-        elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/configs/${variant}/ecx_config.hpp")
-            set(config_dir "${CMAKE_CURRENT_SOURCE_DIR}/configs/${variant}")
-        else()
-            message(FATAL_ERROR
-                "变体 '${variant}' (模块 '${module}') 找不到 ecx_config.hpp：\n"
-                "  既不存在 ${module_dir}/${variant}/ecx_config.hpp\n"
-                "  也不存在 ${CMAKE_CURRENT_SOURCE_DIR}/configs/${variant}/ecx_config.hpp"
-            )
-        endif()
+    if(NOT ARG_NAME)
+        message(FATAL_ERROR "ecx_add_test_executable: 缺少 NAME 参数")
+    endif()
+    if(NOT ARG_SOURCES)
+        message(FATAL_ERROR "ecx_add_test_executable(${ARG_NAME}): 缺少 SOURCES")
     endif()
 
-    if(NOT base_sources AND NOT variant_sources)
-        return()
-    endif()
-
-    add_executable(${exec_name} ${base_sources} ${variant_sources})
-    target_link_libraries(${exec_name} PRIVATE
+    add_executable(${ARG_NAME} ${ARG_SOURCES})
+    target_link_libraries(${ARG_NAME} PRIVATE
         ecx::ecx
         ecx_test_support
         GTest::gtest_main
     )
-    # 模块目录加 PRIVATE include，便于变体子目录里的测试 #include 模块本地 helper headers
-    target_include_directories(${exec_name} PRIVATE "${module_dir}")
-    if(config_dir)
-        # config 目录加 PRIVATE include，让 configuration.hpp 的 __has_include(<ecx_config.hpp>)
-        # 命中该变体的覆盖文件
-        target_include_directories(${exec_name} PRIVATE "${config_dir}")
+    target_include_directories(${ARG_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"      # 调用方模块目录：本地 config / helper headers
+        "${ECX_TEST_SHARED_CONFIGS_DIR}"   # 跨模块共享 config
+    )
+
+    if(ARG_CONFIG)
+        # 把 helper 的 CONFIG 字符串注入 ECX_INC_USER_CONFIG，
+        # 让 src/_inc/configuration.hpp 通过 __has_include + #include 间接拉到指定 config 头。
+        target_compile_definitions(${ARG_NAME} PRIVATE
+            "ECX_INC_USER_CONFIG=\"${ARG_CONFIG}\""
+        )
     endif()
-    gtest_discover_tests(${exec_name} TEST_PREFIX "${test_prefix}")
+
+    set(prefix "${ARG_PREFIX}")
+    if(NOT prefix)
+        set(prefix "${ARG_NAME}::")
+    endif()
+    gtest_discover_tests(${ARG_NAME} TEST_PREFIX "${prefix}")
 endfunction()
 
 # ---------------------------------------------------------------------------
-# 自动发现：遍历 tests/unit/<module>/，对每个模块生成默认 exec，
-# 再对模块下每个非保留子目录生成变体 exec。
+# 自动 add_subdirectory：unit/ 下任何带 CMakeLists.txt 的子目录都纳入。
+# 仅做"目录是否参与构建"的判定，不揣测目录里应该产生哪些 exec。
 # ---------------------------------------------------------------------------
-set(_unit_root "${CMAKE_CURRENT_SOURCE_DIR}/unit")
-file(GLOB _module_paths LIST_DIRECTORIES true CONFIGURE_DEPENDS "${_unit_root}/*")
+file(GLOB _module_paths LIST_DIRECTORIES true CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/unit/*"
+)
 foreach(_module_path IN LISTS _module_paths)
-    if(NOT IS_DIRECTORY "${_module_path}")
-        continue()
+    if(IS_DIRECTORY "${_module_path}" AND EXISTS "${_module_path}/CMakeLists.txt")
+        add_subdirectory("${_module_path}")
     endif()
-    get_filename_component(_module "${_module_path}" NAME)
-
-    ecx_add_unit_test_executable(${_module})
-
-    file(GLOB _variant_paths LIST_DIRECTORIES true CONFIGURE_DEPENDS "${_module_path}/*")
-    foreach(_variant_path IN LISTS _variant_paths)
-        if(NOT IS_DIRECTORY "${_variant_path}")
-            continue()
-        endif()
-        get_filename_component(_variant "${_variant_path}" NAME)
-        # 模块本地 helper 目录保留名
-        if(_variant STREQUAL "support")
-            continue()
-        endif()
-        ecx_add_unit_test_executable(${_module} ${_variant})
-    endforeach()
 endforeach()
 
-# ---------------------------------------------------------------------------
-# 集成测试（可选）：tests/integration/ 下若有 test_*.cpp 就生成一个 exec。
-# ---------------------------------------------------------------------------
-file(GLOB_RECURSE _integration_sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/integration/test_*.cpp"
-)
-if(_integration_sources)
-    add_executable(ecx_tests_integration ${_integration_sources})
-    target_link_libraries(ecx_tests_integration PRIVATE
-        ecx::ecx
-        ecx_test_support
-        GTest::gtest_main
-    )
-    gtest_discover_tests(ecx_tests_integration TEST_PREFIX "integration::")
+# 集成测试入口（按需创建）
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/integration/CMakeLists.txt")
+    add_subdirectory(integration)
 endif()

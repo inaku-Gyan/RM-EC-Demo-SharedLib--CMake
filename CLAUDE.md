@@ -6,14 +6,15 @@
 
 - `src/algo/` `src/proto/` `src/rtos/` —— 库本体；**只放头文件**，新增模块直接进对应子目录即可，无需改 CMake。
 - `src/rtos/` 依赖 FreeRTOS，**当前不参与构建/测试**；clangd 已抑制其 `pp_file_not_found`。
-- `tests/` —— host 端 GoogleTest 用例。结构与 `src/` 镜像、按 config 变体分层；目录约定见 [tests/CMakeLists.txt](tests/CMakeLists.txt) 顶部注释。要点：
-  - 模块默认测试：`tests/unit/<module>/test_*.cpp`，新增文件自动被收（`CONFIGURE_DEPENDS` + GLOB），无需改 CMake。
-  - 模块的 config 变体：`tests/unit/<module>/<variant>/test_*.cpp`，对应 config 优先取同目录 `ecx_config.hpp`，否则回退到共享 `tests/configs/<variant>/ecx_config.hpp`。
-  - 跨模块共享 config：`tests/configs/<variant>/ecx_config.hpp`（仅放 config，不放测试代码）。
+- `tests/` —— host 端 GoogleTest 用例。每个模块用自己的 CMakeLists.txt 显式声明 (源, config) 矩阵；详见 [tests/CMakeLists.txt](tests/CMakeLists.txt) 顶部注释。要点：
+  - 模块测试源：`tests/unit/<module>/test_*.cpp`，变体专属测试与默认测试同层放置，是否编进某 exec 由模块 CMakeLists.txt 显式决定。
+  - 模块 CMakeLists.txt：用 `ecx_add_test_executable(NAME ... SOURCES ... [CONFIG ecx_config_<name>.hpp] [PREFIX ...])` 声明 exec。不传 CONFIG 走 `ecx_config_default.hpp`；传则通过 `ECX_INC_USER_CONFIG` 注入指定 config 头（见 [src/_inc/configuration.hpp](src/_inc/configuration.hpp)）。
+  - 跨模块共享 config：`tests/configs/ecx_config_<name>.hpp`（扁平，不嵌子目录；模块也可在自己的目录下放同名头来覆盖共享）。
   - 跨模块公用测试工具：`tests/support/`（headers-only，自动暴露为 `ecx_test_support`）。
-  - 模块本地 helper headers：直接放模块目录，`test_*.cpp` 之外的文件不会被当作测试源。
-  - 集成测试：`tests/integration/test_*.cpp`。
-  - ctest 命名：`<module>::<variant?>::<gtest_suite>.<test_name>`。
+  - 模块本地 helper headers：直接放模块目录，模块 CMakeLists 决定哪些源进 exec。
+  - 集成测试：`tests/integration/CMakeLists.txt`（按需创建，顶层自动 add_subdirectory）。
+  - 新增模块只需 `mkdir tests/unit/<M>` + 写 `tests/unit/<M>/CMakeLists.txt`，顶层 foreach 自动接住。
+  - ctest 命名：在 CMakeLists 里用 `PREFIX "<module>::<variant?>::"` 显式给出，例如 `containers::usage_assert::SpscZeroCopyQueueTest.X`。
 - `cmake/` —— arm-none-eabi 工具链文件与目标平台设定。
 - 全项目语言风格：**注释一律用中文**；标识符遵循 [.clang-tidy](.clang-tidy)（类 CamelCase、函数 lower_case、私有成员 `_` 后缀、`constexpr` UPPER_CASE）。
 - 代码风格由 [.clang-format](.clang-format) 强制（Google 风、C++20、100 列）。

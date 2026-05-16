@@ -5,7 +5,6 @@
 // ecx_config_default.hpp 已无条件定义这些宏，覆盖前必须先 #undef。
 
 // 启用对用户调用约定的运行时检查（acquire/commit 状态机）
-#undef ECX_USE_USAGE_ASSERT
 #define ECX_USE_USAGE_ASSERT 1
 
 // 覆盖默认的 assert() 实现：即便 NDEBUG 被定义（test-opt 预设）也强制
