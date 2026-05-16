@@ -1,15 +1,33 @@
 #pragma once
 
-#ifndef ECX_INC_USER_CONFIG
+/********************************************/
+/*************    引入用户配置    ************/
+/********************************************/
+
+#ifndef ECX_USE_USER_CONFIG
+  #define ECX_USE_USER_CONFIG 1
+#endif
+
+#ifndef ECX_USER_CONFIG_INCLUDED
+  #define ECX_USER_CONFIG_INCLUDED 0
+#endif
+
+#if ECX_USE_USER_CONFIG && !defined(ECX_INC_USER_CONFIG)
   #define ECX_INC_USER_CONFIG "ecx_config.hpp"
 #endif
 
-// 让用户配置覆盖默认配置
-#if __has_include(ECX_INC_USER_CONFIG)
-  #include ECX_INC_USER_CONFIG  // IWYU pragma: export
-#endif
+#if ECX_USER_CONFIG_INCLUDED == 0 && ECX_USE_USER_CONFIG == 1
+  // 让用户配置覆盖默认配置
+  #if __has_include(ECX_INC_USER_CONFIG)
+    #include ECX_INC_USER_CONFIG  // IWYU pragma: export
+    #undef ECX_USER_CONFIG_INCLUDED
+    #define ECX_USER_CONFIG_INCLUDED 1
+  #endif
+#endif  // ECX_USER_CONFIG_INCLUDED
 
-//// ECX 库内部使用的断言（仅在开发 ECX 库时启用） ////
+/********************************************/
+/***********    ECX 开发调试配置    **********/
+/********************************************/
 
 // 检查 ECX 的代码是否正确（用于开发 ECX 库本身）
 #ifndef ECX_USE_DEV_DEBUG
@@ -23,7 +41,9 @@
   #define ECX_DEV_ASSERT(expr) (static_cast<void>(0))
 #endif
 
-//// 用户使用 ECX 时的断言（检查用户对 ECX 的使用是否正确） ////
+/********************************************/
+/************    用户使用检查    *************/
+/********************************************/
 
 // 检查用户对 ECX 的使用是否正确
 #ifndef ECX_USE_USAGE_CHECK
@@ -37,7 +57,9 @@
   #define ECX_USAGE_ASSERT(expr) (static_cast<void>(0))
 #endif
 
-//// 基于 CMSIS 的设备特定配置项 ////
+/********************************************/
+/*******    D-Cache 配置和相关工具宏    ******/
+/********************************************/
 
 #ifdef ECX_INC_CMSIS_DEVICE_HEADER
   #include ECX_INC_CMSIS_DEVICE_HEADER
