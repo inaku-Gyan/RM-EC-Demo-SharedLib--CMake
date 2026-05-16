@@ -9,3 +9,6 @@
     do {                               \
         if (!(expr)) { std::abort(); } \
     } while (0)
+
+#define STRINGIFY_HELPER(x) #x
+#define STRINGIFY(x) STRINGIFY_HELPER(x)

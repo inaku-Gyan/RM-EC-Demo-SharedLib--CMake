@@ -49,7 +49,7 @@ set(ECX_TESTS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc")
 #     在测试 include 路径里找不到此文件 → __has_include 返回 false → 默认 config。
 # ---------------------------------------------------------------------------
 function(ecx_add_test_executable)
-    cmake_parse_arguments(ARG "" "NAME;CONFIG;PREFIX" "SOURCES" ${ARGN})
+    cmake_parse_arguments(ARG "" "NAME;CONFIG;DEFINES;PREFIX" "SOURCES" ${ARGN})
 
     if(NOT ARG_NAME)
         message(FATAL_ERROR "ecx_add_test_executable: 缺少 NAME 参数")
@@ -75,6 +75,10 @@ function(ecx_add_test_executable)
         target_compile_definitions(${ARG_NAME} PRIVATE
             "ECX_INC_USER_CONFIG=\"${ARG_CONFIG}\""
         )
+    endif()
+
+    if(ARG_DEFINES)
+        target_compile_definitions(${ARG_NAME} PRIVATE ${ARG_DEFINES})
     endif()
 
     set(prefix "${ARG_PREFIX}")

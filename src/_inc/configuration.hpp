@@ -4,15 +4,19 @@
 /*************    引入用户配置    ************/
 /********************************************/
 
+#ifndef ECX_USE_USER_CONFIG
+  #define ECX_USE_USER_CONFIG 1
+#endif
+
 #ifndef ECX_USER_CONFIG_INCLUDED
   #define ECX_USER_CONFIG_INCLUDED 0
 #endif
 
-#ifndef ECX_INC_USER_CONFIG
+#if ECX_USE_USER_CONFIG && !defined(ECX_INC_USER_CONFIG)
   #define ECX_INC_USER_CONFIG "ecx_config.hpp"
 #endif
 
-#if ECX_USER_CONFIG_INCLUDED == 0
+#if ECX_USER_CONFIG_INCLUDED == 0 && ECX_USE_USER_CONFIG == 1
   // 让用户配置覆盖默认配置
   #if __has_include(ECX_INC_USER_CONFIG)
     #include ECX_INC_USER_CONFIG  // IWYU pragma: export
