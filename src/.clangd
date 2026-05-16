@@ -1,2 +1,7 @@
 CompileFlags:
   CompilationDatabase: ../build/build-armgcc
+  # 注意：clangd 默认按 clang 的 resource-dir 解析系统头，arm-none-eabi-g++ 的 libstdc++ 不在那里。
+  # 必须让 clangd 进程带 --query-driver=<glob>，由它执行驱动反查 -isystem 路径。
+  # 该开关无法在 .clangd 中配置（它是 clangd 命令行参数，不是 compile flag）。
+  #   VS Code: 见 .vscode/settings.json 的 clangd.arguments
+  #   命令行： clangd --query-driver='/**/arm-none-eabi-*' --check=./src/memory.hpp

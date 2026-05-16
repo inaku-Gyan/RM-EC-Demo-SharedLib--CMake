@@ -33,7 +33,7 @@ if(ECX_BUILD_ARM_CHECK)
     foreach(HEADER IN LISTS ALL_HEADERS)
         file(RELATIVE_PATH REL_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src" "${HEADER}")
         if(NOT REL_HEADER MATCHES "(^|/)_")
-            string(APPEND CHECK_CPP_CONTENT "#include \"${REL_HEADER}\"\n")
+            string(APPEND CHECK_CPP_CONTENT "#include <${REL_HEADER}>\n")
         endif()
     endforeach()
 
