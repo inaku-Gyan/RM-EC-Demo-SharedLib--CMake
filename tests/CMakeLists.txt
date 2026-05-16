@@ -11,35 +11,26 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
+# 顶层 tests/ 的 inc/ 目录——helper 会把它加进每个测试 target 的 PRIVATE include path，
+# 这样 `<common/ecx_config_xxx.hpp>` 这种角括号 include 才能在编译时被 __has_include 命中。
+# 必须在 helper 函数定义之前 set，且作用域延伸到所有 add_subdirectory 进来的模块。
+set(ECX_TESTS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+
 # ---------------------------------------------------------------------------
 # 目录约定
 #   tests/
-#   ├── support/                            # 跨模块公用测试工具 (headers-only) → ecx_test_support
-#   ├── configs/                            # 跨模块共享 config 头（扁平、统一命名）
-#   │   └── ecx_config_<name>.hpp
-#   ├── unit/<module>/
-#   │   ├── CMakeLists.txt                  # 该模块显式声明它的所有测试 exec
-#   │   ├── test_*.cpp                      # 测试源（变体专属与默认同层）
-#   │   └── ecx_config_<name>.hpp           # （可选）模块本地 config，优先于共享
-#   └── integration/
-#       └── CMakeLists.txt                  # （可选）按需创建
+#   ├── inc/common/
+#   │       ├── ecx_config_<name>.hpp           # 跨模块共享 config 头（扁平、统一命名）
+#   │       └── ...                             # 跨模块公用测试工具 (headers-only)
+#   ├── unit/**/<module>/
+#   │           ├── CMakeLists.txt          # 该模块显式声明它的所有测试 exec
+#   │           ├── test_*.cpp              # 测试源（变体专属与默认同层）
+#   │           └── ecx_config_<name>.hpp   # （可选）模块本地 config，优先于共享
+#   └── CMakeLists.txt
 #
 # 测试 exec 与 config 的对应关系完全由模块 CMakeLists.txt 显式声明，
 # 顶层只做：定义工具/helper + 自动 add_subdirectory 带 CMakeLists.txt 的模块。
 # ---------------------------------------------------------------------------
-
-# 跨模块公用测试工具：INTERFACE 库，被所有测试可执行文件 link
-add_library(ecx_test_support INTERFACE)
-target_include_directories(ecx_test_support INTERFACE
-    "${CMAKE_CURRENT_SOURCE_DIR}/support"
-)
-target_link_libraries(ecx_test_support INTERFACE
-    GTest::gtest
-    GTest::gmock
-)
-
-# 共享 config 头目录（供 helper 加进 PRIVATE include path）
-set(ECX_TEST_SHARED_CONFIGS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/configs")
 
 # ---------------------------------------------------------------------------
 # 声明一个测试可执行文件。
@@ -70,12 +61,12 @@ function(ecx_add_test_executable)
     add_executable(${ARG_NAME} ${ARG_SOURCES})
     target_link_libraries(${ARG_NAME} PRIVATE
         ecx::ecx
-        ecx_test_support
         GTest::gtest_main
+        GTest::gtest
+        GTest::gmock
     )
     target_include_directories(${ARG_NAME} PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}"      # 调用方模块目录：本地 config / helper headers
-        "${ECX_TEST_SHARED_CONFIGS_DIR}"   # 跨模块共享 config
+        "${ECX_TESTS_INC_DIR}"             # 顶层 tests/inc/：跨模块共享 config 与工具头
     )
 
     if(ARG_CONFIG)
@@ -105,8 +96,3 @@ foreach(_module_path IN LISTS _module_paths)
         add_subdirectory("${_module_path}")
     endif()
 endforeach()
-
-# 集成测试入口（按需创建）
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/integration/CMakeLists.txt")
-    add_subdirectory(integration)
-endif()
