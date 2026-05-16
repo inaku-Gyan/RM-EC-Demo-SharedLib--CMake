@@ -43,7 +43,10 @@ jobs:
           ref: ${{ env.ReleaseTag }}
           fetch-tags: true
           sparse-checkout: |
-            src/
+            src/**/*.h
+            src/**/*.c
+            src/**/*.hpp
+            src/**/*.cpp
             !**/tests/**
             !**/test/**
             !**/test_*
