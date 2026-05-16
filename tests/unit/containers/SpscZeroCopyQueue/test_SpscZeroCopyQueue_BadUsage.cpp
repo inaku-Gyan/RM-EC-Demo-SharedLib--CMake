@@ -15,7 +15,8 @@ TEST(SpscZeroCopyQueueBadUsageDeathTest, ReadAcquireTwiceWithoutCommit) {
     *w = 1;
     q.write_commit();
 
-    [[maybe_unused]] const auto* r = q.read_acquire();
+    [[maybe_unused]]
+    const auto* r = q.read_acquire();
     ASSERT_NE(r, nullptr);
     // 未 commit 就再次 acquire，应触发断言
     EXPECT_DEATH({ (void)q.read_acquire(); }, "");
@@ -23,7 +24,8 @@ TEST(SpscZeroCopyQueueBadUsageDeathTest, ReadAcquireTwiceWithoutCommit) {
 
 TEST(SpscZeroCopyQueueBadUsageDeathTest, WriteAcquireTwiceWithoutCommit) {
     SpscZeroCopyQueue<int, 4> q;
-    [[maybe_unused]] auto* w = q.write_acquire();
+    [[maybe_unused]]
+    auto* w = q.write_acquire();
     ASSERT_NE(w, nullptr);
     // 未 commit 就再次 acquire，应触发断言
     EXPECT_DEATH({ (void)q.write_acquire(); }, "");

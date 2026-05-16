@@ -16,6 +16,12 @@ TEST(ConfigurationTest, NoUserConfig) {
     /// D-Cache 配置 ///
 
     static_assert(ECX_USE_DCACHE == 0, "Expected default configuration");
+
+    // 测试断言检查功能
+
+    EXPECT_NO_FATAL_FAILURE(ECX_DEV_ASSERT(false));
+
+    EXPECT_NO_FATAL_FAILURE(ECX_USAGE_ASSERT(false));
 }
 
 }  // namespace
