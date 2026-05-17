@@ -127,6 +127,9 @@ jobs:
           # release 分支的发布提交打 release_tag
           git tag "${{ env.ReleaseTag }}" HEAD
 
+          # 拉取 main，确保本地存在源提交对象，才能在其上打 development tag
+          git fetch --no-tags origin main
+
           # main 源提交打 development/release_tag
           git tag "development/${{ env.ReleaseTag }}" "${{ steps.original_commit_info.outputs.CommitSHA }}"
 
