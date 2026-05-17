@@ -40,6 +40,7 @@ jobs:
       - name: 校验 release_tag 格式
         run: |
           set -euo pipefail
+          # 发布契约仅允许正式版，或 alpha/beta 预发布号（不接受其他 prerelease/build 元数据）
           release_tag_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$'
           if ! [[ "${{ env.ReleaseTag }}" =~ $release_tag_pattern ]]; then
             echo "::error::release_tag '${{ env.ReleaseTag }}' 格式非法，要求形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
@@ -128,8 +129,10 @@ jobs:
           git tag "${{ env.ReleaseTag }}" HEAD
 
           # 优先只拉取源提交对象；若服务端策略限制，则回退到拉取 main
-          git fetch --no-tags --depth=1 origin "${{ steps.original_commit_info.outputs.CommitSHA }}" || \
+          if ! git fetch --no-tags --depth=1 origin "${{ steps.original_commit_info.outputs.CommitSHA }}"; then
+            echo "::warning::无法按 SHA 直接拉取源提交对象，回退为拉取 main 分支以继续打 development tag"
             git fetch --no-tags origin main
+          fi
 
           # main 源提交打 development/release_tag
           git tag "development/${{ env.ReleaseTag }}" "${{ steps.original_commit_info.outputs.CommitSHA }}"
