@@ -31,7 +31,11 @@ TEST(ConfigurationTest, DefaultConfigPath) {
 
     EXPECT_NO_FATAL_FAILURE(ECX_USAGE_ASSERT(true));
 
+#ifdef NDEBUG
+    EXPECT_NO_FATAL_FAILURE(ECX_USAGE_ASSERT(false));
+#else
     EXPECT_DEATH(ECX_USAGE_ASSERT(false), ".*");
+#endif
 }
 
 }  // namespace
