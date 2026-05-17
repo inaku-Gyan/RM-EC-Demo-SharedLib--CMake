@@ -1,10 +1,14 @@
 name: Release
 
-# 当 GitHub Release 发布（含预发布）时触发：从 Release 关联的 tag 检出代码，
-# 把 src/ 内容平铺到 release 分支。GitHub Release 是「发布」的唯一入口，
+# 手动触发发布：从 main 分支当前提交检出代码，
+# 把 src/ 内容平铺到 release 分支，并创建发布所需的两个 tag。
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "发布标签（如 v1.2.3 / v1.2.3-beta.1 / v1.2.3-alpha.1）"
+        required: true
+        type: string
 
 # 串行化所有 release job，避免并发推 release 分支竞争
 concurrency:
@@ -17,7 +21,7 @@ env:
   SrcCodeDir: original
   ReleaseDir: release
 
-  ReleaseTag: ${{ github.event.release.tag_name }}
+  ReleaseTag: ${{ github.event.inputs.release_tag }}
 
 jobs:
   release:
@@ -25,14 +29,33 @@ jobs:
     permissions:
       contents: write
     steps:
-      # SemVer 格式校验
-      #   参考 https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-      - name: 校验 tag 符合 SemVer
+      - name: 校验触发分支是 main
         run: |
           set -euo pipefail
-          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if [[ "${{ github.ref_name }}" != "main" ]]; then
+            echo "::error::请在 main 分支触发发布工作流，当前分支为 '${{ github.ref_name }}'"
+            exit 1
+          fi
+
+      - name: 校验 release_tag 格式
+        run: |
+          set -euo pipefail
+          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$'
           if ! [[ "${{ env.ReleaseTag }}" =~ $semver ]]; then
-            echo "::error::tag '${{ env.ReleaseTag }}' 不是合法 SemVer，要求形如 v1.2.3 / v1.2.3-rc.1 / v1.2.3+build.5"
+            echo "::error::release_tag '${{ env.ReleaseTag }}' 格式非法，要求形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
+            exit 1
+          fi
+
+      - name: 校验发布标签未重复
+        run: |
+          set -euo pipefail
+          if git ls-remote --tags --exit-code origin "refs/tags/${{ env.ReleaseTag }}" >/dev/null 2>&1; then
+            echo "::error::release_tag '${{ env.ReleaseTag }}' 已存在，禁止重复发布"
+            exit 1
+          fi
+
+          if git ls-remote --tags --exit-code origin "refs/tags/development/${{ env.ReleaseTag }}" >/dev/null 2>&1; then
+            echo "::error::development/${{ env.ReleaseTag }} 已存在，禁止重复发布"
             exit 1
           fi
 
@@ -40,7 +63,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           path: ${{ env.SrcCodeDir }}
-          ref: ${{ env.ReleaseTag }}
+          ref: ${{ github.sha }}
           fetch-tags: true
           sparse-checkout: |
             src/**/*.h
@@ -57,7 +80,7 @@ jobs:
         id: original_commit_info
         working-directory: ${{ env.SrcCodeDir }}
         run: |
-          echo "Checked out the original repo at tag '${{ env.ReleaseTag }}'. The original repo contains:"
+          echo "Checked out the original repo at commit '${{ github.sha }}'. The original repo contains:"
           ls -A .
 
           # 输出 commit SHA
@@ -93,10 +116,21 @@ jobs:
       - name: Release
         working-directory: ${{ env.ReleaseDir }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add .
           git commit -m "Release \`${{ env.ReleaseTag }}\`" \
                      -m "(original commit: \`${{ steps.original_commit_info.outputs.CommitSHA }}\`)"
-          git push origin ${{ env.ReleaseBranch }}
+
+          # release 分支的发布提交打 release_tag
+          git tag "${{ env.ReleaseTag }}" HEAD
+
+          # main 源提交打 development/release_tag
+          git tag "development/${{ env.ReleaseTag }}" "${{ steps.original_commit_info.outputs.CommitSHA }}"
+
+          git push origin \
+            "${{ env.ReleaseBranch }}" \
+            "refs/tags/${{ env.ReleaseTag }}" \
+            "refs/tags/development/${{ env.ReleaseTag }}"
