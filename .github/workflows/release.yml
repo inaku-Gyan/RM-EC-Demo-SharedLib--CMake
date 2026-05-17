@@ -70,6 +70,7 @@ jobs:
         with:
           path: ${{ env.ReleaseDir }}
           ref: ${{ env.ReleaseBranch }}
+          fetch-tags: true
 
       - name: Clear the release repo
         run: |
