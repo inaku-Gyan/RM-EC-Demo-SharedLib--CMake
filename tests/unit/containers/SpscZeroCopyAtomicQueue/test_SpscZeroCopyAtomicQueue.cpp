@@ -6,7 +6,7 @@
 #include <thread>
 #include <vector>
 
-#include "containers/SpscZeroCopyAtomicQueue.hpp"
+#include "ecx/containers/SpscZeroCopyAtomicQueue.hpp"
 
 namespace {
 

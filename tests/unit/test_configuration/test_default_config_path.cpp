@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 
 // 随便引入一个 ECX 库文件用于测试
-#include <memory.hpp>
-
-#include "_inc/configuration.hpp"
+#include "ecx/_inc/configuration.hpp"
 
 static_assert(SELF_DEFINE_MACRO == 1, "User config should be included");
 

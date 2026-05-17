@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 // 随便引入一个 ECX 库文件用于测试
-#include <memory.hpp>
+#include "ecx/_inc/configuration.hpp"
 
 namespace {
 

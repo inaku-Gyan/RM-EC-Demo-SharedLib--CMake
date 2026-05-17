@@ -83,7 +83,7 @@ jobs:
       - name: Construct the release
         run: |
           #  (+) 此处使用 `*`，将不会匹配 `.` 开头的隐藏文件和目录
-          mv ${{ env.SrcCodeDir }}/src/* ${{ env.ReleaseDir }}/
+          mv ${{ env.SrcCodeDir }}/src/ecx/* ${{ env.ReleaseDir }}/
           mv ${{ env.SrcCodeDir }}/LICENSE ${{ env.ReleaseDir }}/
 
           echo "Finished constructing the release. The release directory now contains:"

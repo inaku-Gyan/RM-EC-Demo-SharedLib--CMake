@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "containers/SpscZeroCopyAtomicQueue.hpp"
+#include "ecx/containers/SpscZeroCopyAtomicQueue.hpp"
 
 namespace {
 
