@@ -19,7 +19,7 @@
 #if ECX_USER_CONFIG_INCLUDED == 0 && ECX_USE_USER_CONFIG == 1
   // 让用户配置覆盖默认配置
   #if __has_include(ECX_INC_USER_CONFIG)
-    #include ECX_INC_USER_CONFIG  // IWYU pragma: keep
+    #include ECX_INC_USER_CONFIG  // IWYU pragma: export
     #undef ECX_USER_CONFIG_INCLUDED
     #define ECX_USER_CONFIG_INCLUDED 1
   #endif
@@ -74,6 +74,10 @@
   #endif
 #endif
 
+#if ECX_USE_DCACHE == 0 && defined(ECX_DCACHE_LINE_SIZE)
+  #error "ECX_DCACHE_LINE_SIZE should not be defined by user, since D-Cache is disabled"
+#endif
+
 // 对齐到 D-Cache 行大小，以避免伪共享（仅当启用 D-Cache 时有效）
 // 伪共享（false sharing）指多个处理器核心频繁访问同一缓存行中的不同变量，导致性能下降。
 // 通过将共享变量对齐到缓存行大小，可以避免这种情况。
@@ -86,6 +90,10 @@
 #endif
 
 #if ECX_USE_DCACHE
+  #if ECX_DCACHE_LINE_SIZE < 4 || (ECX_DCACHE_LINE_SIZE & (ECX_DCACHE_LINE_SIZE - 1)) != 0
+    #error "ECX_DCACHE_LINE_SIZE must be a power of two and at least 4 when D-Cache is enabled"
+  #endif
+
   // 确保类型 tp 至少对齐到 D-Cache 行大小
   #define ECX_ALIGNAS_DCACHE_LINE(...) \
       alignas(ECX_DCACHE_LINE_SIZE) alignas(__VA_ARGS__) __VA_ARGS__
