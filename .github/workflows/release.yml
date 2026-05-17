@@ -40,8 +40,8 @@ jobs:
       - name: 校验 release_tag 格式
         run: |
           set -euo pipefail
-          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$'
-          if ! [[ "${{ env.ReleaseTag }}" =~ $semver ]]; then
+          release_tag_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$'
+          if ! [[ "${{ env.ReleaseTag }}" =~ $release_tag_pattern ]]; then
             echo "::error::release_tag '${{ env.ReleaseTag }}' 格式非法，要求形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
             exit 1
           fi
@@ -127,8 +127,9 @@ jobs:
           # release 分支的发布提交打 release_tag
           git tag "${{ env.ReleaseTag }}" HEAD
 
-          # 拉取 main，确保本地存在源提交对象，才能在其上打 development tag
-          git fetch --no-tags origin main
+          # 优先只拉取源提交对象；若服务端策略限制，则回退到拉取 main
+          git fetch --no-tags --depth=1 origin "${{ steps.original_commit_info.outputs.CommitSHA }}" || \
+            git fetch --no-tags origin main
 
           # main 源提交打 development/release_tag
           git tag "development/${{ env.ReleaseTag }}" "${{ steps.original_commit_info.outputs.CommitSHA }}"
