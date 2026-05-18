@@ -93,15 +93,15 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 
 发布由 **手动触发 workflow_dispatch** 执行（见 [release.yml](.github/workflows/release.yml)）。工作流做这几件事：
 
-1. 要求在 `main` 分支触发，并输入必填参数 `release_tag`。
-2. **校验 `release_tag` 格式**：`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$`，不符合直接报错退出。
-3. **校验 Git tag 不重复**：`release_tag` 与 `development/release_tag` 均必须是新 tag。
+1. 要求在 `main` 分支触发，并输入必填参数 `<release_tag>`。
+2. **校验 `<release_tag>` 格式**：`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$`，不符合直接报错退出。
+3. **校验 Git tag 不重复**：`<release_tag>` 与 `development/<release_tag>` 均必须是新 tag。
 4. 在源仓库以**稀疏检出**只取 `src/` + `LICENSE`，过滤掉 `tests/`、`test/`、`test_*` 等文件。
 5. 切到 `release` 分支，**清空**该分支内容（保留 `.git/`），将 `src/*` **平铺**到分支根，并附上 `LICENSE`。
 6. 以 `github-actions[bot]` 身份提交，commit message 标注「源 commit SHA」，并推送：
    - `release` 分支更新；
-   - `release_tag`（打在 `release` 分支新 commit 上）；
-   - `development/release_tag`（打在 `main` 分支对应源 commit 上）。
+   - `<release_tag>`（打在 `release` 分支新 commit 上）；
+   - `development/<release_tag>`（打在 `main` 分支对应源 commit 上）。
 
 最终结果：`release` 分支根目录直接是本项目用于分发的业务代码。下游可以把 `release` 分支作为 git submodule 引入，或拉取后直接 `add_subdirectory` / 加入 include path。
 
@@ -109,8 +109,8 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 
 1. 在 `main` 分支确认要发布的 commit；本地跑过 `test-dev`、`test-opt`、`build-armgcc` 三档全部 PASS。
 2. 在 GitHub 仓库的 **Actions → Release** 中点击 **Run workflow**，并确认运行分支为 `main`。
-3. 输入 `release_tag`（如 `v1.2.3`、`v1.2.3-beta.1`、`v1.2.3-alpha.1`），再执行。
-4. 检查 workflow 运行状态、`release` 分支，以及两个新 tag（`release_tag` 与 `development/release_tag`）均创建成功。
+3. 输入 `<release_tag>`（如 `v1.2.3`、`v1.2.3-beta.1`、`v1.2.3-alpha.1`），再执行。
+4. 检查 workflow 运行状态、`release` 分支，以及两个新 tag（`<release_tag>` 与 `development/<release_tag>`）均创建成功。
 
 ### 注意事项
 
