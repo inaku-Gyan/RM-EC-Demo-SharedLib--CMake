@@ -93,7 +93,7 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 
 发布由 **手动触发 workflow_dispatch** 执行（见 [release.yml](.github/workflows/release.yml)）。工作流做这几件事：
 
-1. 在 GitHub Actions 手动触发发布：可从 `main` 分支触发，或从 `development/<release_tag>` tag 触发。
+1. 手动触发发布时，可从 `main` 分支触发，或从 `development/<release_tag>` tag 触发。
 2. **解析并校验 `<release_tag>`**：
    - 从分支触发时：必须输入 `<release_tag>`，并满足 `^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$`。
    - 从 tag 触发时：可不输入 `<release_tag>`，直接从所选 tag 解析；所选 tag 必须满足 `development/<release_tag>`。
