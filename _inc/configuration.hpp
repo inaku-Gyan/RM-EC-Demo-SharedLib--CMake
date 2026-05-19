@@ -62,7 +62,7 @@
 /********************************************/
 
 #ifdef ECX_INC_CMSIS_DEVICE_HEADER
-  #include ECX_INC_CMSIS_DEVICE_HEADER
+  #include ECX_INC_CMSIS_DEVICE_HEADER  // IWYU pragma: keep
 #endif
 
 // Cortex-M7 有 D-Cache，而 Cortex-M4 没有。
@@ -72,6 +72,10 @@
   #else
     #define ECX_USE_DCACHE 0
   #endif
+#endif
+
+#if ECX_USE_DCACHE == 0 && defined(ECX_DCACHE_LINE_SIZE)
+  #error "ECX_DCACHE_LINE_SIZE should not be defined by user, since D-Cache is disabled"
 #endif
 
 // 对齐到 D-Cache 行大小，以避免伪共享（仅当启用 D-Cache 时有效）
@@ -86,6 +90,10 @@
 #endif
 
 #if ECX_USE_DCACHE
+  #if ECX_DCACHE_LINE_SIZE < 4 || (ECX_DCACHE_LINE_SIZE & (ECX_DCACHE_LINE_SIZE - 1)) != 0
+    #error "ECX_DCACHE_LINE_SIZE must be a power of two and at least 4 when D-Cache is enabled"
+  #endif
+
   // 确保类型 tp 至少对齐到 D-Cache 行大小
   #define ECX_ALIGNAS_DCACHE_LINE(...) \
       alignas(ECX_DCACHE_LINE_SIZE) alignas(__VA_ARGS__) __VA_ARGS__
