@@ -3,6 +3,8 @@ name: Publish GitHub Release
 # 当 release 分支上的发布 tag（<release_tag>）被 push 时，创建 GitHub Release。
 on:
   push:
+    branches:
+      - release
     tags:
       - "v*.*.*"
 
