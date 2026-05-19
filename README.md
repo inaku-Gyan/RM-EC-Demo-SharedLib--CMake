@@ -105,6 +105,9 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
    - `release` 分支更新；
    - `<release_tag>`（打在 `release` 分支新 commit 上）；
    - `development/<release_tag>`（打在 `main` 分支对应源 commit 上）。
+7. 当 `<release_tag>` 被 push 后，`publish-github-release.yml` 会用 `softprops/action-gh-release@v3` 自动创建 GitHub Release：
+   - `alpha` / `beta` 版本自动标记为 `prerelease: true`；
+   - `generate_release_notes: true` 自动生成发布说明。
 
 最终结果：`release` 分支根目录直接是本项目用于分发的业务代码。下游可以把 `release` 分支作为 git submodule 引入，或拉取后直接 `add_subdirectory` / 加入 include path。
 
@@ -116,6 +119,7 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
    - 若选择 `main` 分支：必须输入 `<release_tag>`（如 `v1.2.3`、`v1.2.3-beta.1`、`v1.2.3-alpha.1`）；
    - 若选择 tag：需选择 `development/<release_tag>` 形式的 tag，此时可不输入 `<release_tag>`。
 4. 检查 workflow 运行状态、`release` 分支，以及两个新 tag（`<release_tag>` 与 `development/<release_tag>`）均创建成功。
+5. 检查 `Publish GitHub Release` workflow 运行成功，且对应 GitHub Release 已创建。
 
 ### 注意事项
 
