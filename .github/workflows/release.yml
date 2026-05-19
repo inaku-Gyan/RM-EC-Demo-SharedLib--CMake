@@ -37,26 +37,27 @@ jobs:
           release_tag_pattern="^${release_tag_core}$"
           release_tag_input="${{ github.event.inputs.release_tag }}"
 
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          if [[ -n "$release_tag_input" ]]; then
+            if ! [[ "$release_tag_input" =~ $release_tag_pattern ]]; then
+              echo "::error::release_tag '$release_tag_input' 格式非法，要求形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
+              exit 1
+            fi
+            release_tag="$release_tag_input"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             selected_ref_name="${{ github.ref_name }}"
             if ! [[ "$selected_ref_name" =~ ^development/ ]]; then
-              echo "::error::选择 tag 触发时，所选 tag 必须满足 development/<release_tag> 格式，且 <release_tag> 需形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
+              echo "::error::未输入 release_tag 时，选择 tag 触发必须满足 development/<release_tag> 格式，且 <release_tag> 需形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
               exit 1
             fi
 
             release_tag="${selected_ref_name#development/}"
             if [[ -z "$release_tag" ]]; then
-              echo "::error::选择 tag 触发时，所选 tag 必须满足 development/<release_tag> 格式，不能仅为 development/"
+              echo "::error::未输入 release_tag 时，选择 tag 触发不能仅为 development/，必须满足 development/<release_tag>"
               exit 1
             fi
 
             if ! [[ "$release_tag" =~ $release_tag_pattern ]]; then
-              echo "::error::选择 tag 触发时，所选 tag 必须满足 development/<release_tag> 格式，且 <release_tag> 需形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
-              exit 1
-            fi
-
-            if [[ -n "$release_tag_input" && "$release_tag_input" != "$release_tag" ]]; then
-              echo "::error::输入的 release_tag 与所选 tag 不一致：输入为 '$release_tag_input'，所选 tag 解析为 '$release_tag'"
+              echo "::error::未输入 release_tag 时，选择 tag 触发必须满足 development/<release_tag> 格式，且 <release_tag> 需形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
               exit 1
             fi
           else
@@ -65,17 +66,8 @@ jobs:
               exit 1
             fi
 
-            if [[ -z "$release_tag_input" ]]; then
-              echo "::error::从分支触发时必须输入 release_tag"
-              exit 1
-            fi
-
-            if ! [[ "$release_tag_input" =~ $release_tag_pattern ]]; then
-              echo "::error::release_tag '$release_tag_input' 格式非法，要求形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
-              exit 1
-            fi
-
-            release_tag="$release_tag_input"
+            echo "::error::从分支触发时必须输入 release_tag"
+            exit 1
           fi
 
           echo "ReleaseTag=$release_tag" >> "$GITHUB_OUTPUT"

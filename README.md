@@ -96,8 +96,8 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 1. 手动触发发布时，可从 `main` 分支触发，或从 `development/<release_tag>` tag 触发。
 2. **解析并校验 `<release_tag>`**：
    - 从分支触发时：必须输入 `<release_tag>`，并满足 `^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$`。
-   - 从 tag 触发时：可不输入 `<release_tag>`，直接从所选 tag 解析；所选 tag 必须满足 `development/<release_tag>`。
-   - 若从 tag 触发时同时输入 `<release_tag>`，则该输入值必须与所选 tag 解析出的 `<release_tag>` 完全一致。
+   - 只要输入了 `<release_tag>`：无论 `ref_type` 是 `branch` 还是 `tag`，都直接使用输入值进行格式校验与发布。
+   - 从 tag 触发且未输入 `<release_tag>` 时：直接从所选 tag 解析；所选 tag 必须满足 `development/<release_tag>`。
 3. **校验 Git tag 不重复**：`<release_tag>` 与 `development/<release_tag>` 均必须是新 tag。
 4. 在源仓库以**稀疏检出**只取 `src/` + `LICENSE`，过滤掉 `tests/`、`test/`、`test_*` 等文件。
 5. 切到 `release` 分支，**清空**该分支内容（保留 `.git/`），将 `src/*` **平铺**到分支根，并附上 `LICENSE`。
