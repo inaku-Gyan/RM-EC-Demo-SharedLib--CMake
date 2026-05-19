@@ -1,0 +1,43 @@
+name: Publish GitHub Release
+
+# 当 release 分支上的发布 tag（<release_tag>）被 push 时，创建 GitHub Release。
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: 校验 tag 格式与来源分支
+        run: |
+          set -euo pipefail
+          release_tag_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$'
+          release_tag="${{ github.ref_name }}"
+
+          if ! [[ "$release_tag" =~ $release_tag_pattern ]]; then
+            echo "::error::tag '$release_tag' 不满足 <release_tag> 格式，要求形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
+            exit 1
+          fi
+
+          git fetch --no-tags origin release:refs/remotes/origin/release
+          tag_commit="$(git rev-list -n 1 "refs/tags/$release_tag")"
+          if ! git merge-base --is-ancestor "$tag_commit" "origin/release"; then
+            echo "::error::tag '$release_tag' 不在 release 分支历史上，拒绝创建 GitHub Release"
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          prerelease: ${{ contains(github.ref_name, '-alpha.') || contains(github.ref_name, '-beta.') }}
+          generate_release_notes: true

@@ -91,24 +91,40 @@ cmake --preset build-armgcc && cmake --build --preset build-armgcc
 
 ### 触发与产出
 
-发布由 **GitHub Release 发布事件**自动触发（见 [release.yml](.github/workflows/release.yml)）。工作流做这几件事：
+发布由 **手动触发 workflow_dispatch** 执行（见 [release.yml](.github/workflows/release.yml)）。工作流做这几件事：
 
-1. **校验 tag 符合 SemVer**（如 `v1.2.3` / `v1.2.3-rc.1` / `v1.2.3+build.5`），不符合直接报错退出。
-2. 在源仓库以**稀疏检出**只取 `src/` + `LICENSE`，过滤掉 `tests/`、`test/`、`test_*` 等文件。
-3. 切到 `release` 分支，**清空**该分支内容（保留 `.git/`），将 `src/*` **平铺**到分支根，并附上 `LICENSE`。
-4. 以 `github-actions[bot]` 身份提交，commit message 标注「源 commit SHA」，推送到 `origin/release`。
+1. 手动触发发布时，可从 `main` 分支触发，或从 `development/<release_tag>` tag 触发。
+2. **解析并校验 `<release_tag>`**：
+   - 从分支触发时：必须输入 `<release_tag>`，并满足 `^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$`。
+   - 只要输入了 `<release_tag>`：无论 `ref_type` 是 `branch` 还是 `tag`，都直接使用输入值进行格式校验与发布。
+   - 从 tag 触发且未输入 `<release_tag>` 时：直接从所选 tag 解析；所选 tag 必须满足 `development/<release_tag>`。
+3. **校验 Git tag 不重复**：
+   - 总是校验 `<release_tag>` 必须是新 tag；
+   - 仅当本次需要新建 `development/<release_tag>`（即不是“从该 development tag 直接解析”的场景）时，才校验它必须是新 tag。
+4. 在源仓库以**稀疏检出**只取 `src/` + `LICENSE`，过滤掉 `tests/`、`test/`、`test_*` 等文件。
+5. 切到 `release` 分支，**清空**该分支内容（保留 `.git/`），将 `src/*` **平铺**到分支根，并附上 `LICENSE`。
+6. 以 `github-actions[bot]` 身份提交，commit message 标注「源 commit SHA」，并推送：
+   - `release` 分支更新；
+   - `<release_tag>`（打在 `release` 分支新 commit 上）；
+   - `development/<release_tag>`（仅当本次需要新建时，打在 `main` 分支对应源 commit 上）。
+7. 当 `<release_tag>` 被 push 后，`publish-github-release.yml` 会用 `softprops/action-gh-release@v3` 自动创建 GitHub Release：
+   - `alpha` / `beta` 版本自动标记为 `prerelease: true`；
+   - `generate_release_notes: true` 自动生成发布说明。
 
 最终结果：`release` 分支根目录直接是本项目用于分发的业务代码。下游可以把 `release` 分支作为 git submodule 引入，或拉取后直接 `add_subdirectory` / 加入 include path。
 
 ### 发布步骤（维护者）
 
 1. 在 `main` 分支确认要发布的 commit；本地跑过 `test-dev`、`test-opt`、`build-armgcc` 三档全部 PASS。
-2. 在 GitHub 仓库页面打 **Draft a new release**：
-   - **Tag**：形如 `v1.2.3`、`v1.2.3-beta.1`、`v1.2.3-alpha.1`（必须遵循 [SemVer 规范](https://semver.org/)，但以 `v` 开头）；
-   - **Target**：要发布的 commit / branch；
-   - **Title / Description**：建议放 changelog 摘要。
-3. 点击 **Publish release**。
-4. 检查 workflow 运行状态和 `release` 分支，确保发布成功。
+2. 在 GitHub 仓库的 **Actions → Release** 中点击 **Run workflow**。
+3. 选择运行来源：
+   - 若选择 `main` 分支：必须输入 `<release_tag>`（如 `v1.2.3`、`v1.2.3-beta.1`、`v1.2.3-alpha.1`）；
+   - 若选择 tag：需选择 `development/<release_tag>` 形式的 tag，此时可不输入 `<release_tag>`。
+4. 检查 workflow 运行状态、`release` 分支，以及 tag 创建结果：
+   - 必须有新的 `<release_tag>`；
+   - 若本次是从 `development/<release_tag>` 且未输入 `<release_tag>` 直接解析，则该 development tag 复用已有值，不会重复创建；
+   - 其他场景应有新的 `development/<release_tag>`。
+5. 检查 `Publish GitHub Release` workflow 运行成功，且对应 GitHub Release 已创建。
 
 ### 注意事项
 
