@@ -21,7 +21,6 @@ env:
   SrcCodeDir: original
   ReleaseDir: release
 
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -144,6 +143,7 @@ jobs:
           echo "Finished constructing the release. The release directory now contains:"
           ls -A ${{ env.ReleaseDir }}
 
+      # 将代码发布到 release 分支，并打 <release_tag>；同时根据条件打 development/<release_tag>
       - name: Release
         working-directory: ${{ env.ReleaseDir }}
         run: |
@@ -176,3 +176,11 @@ jobs:
           fi
 
           git push origin "${push_refs[@]}"
+
+      # 从 release 分支上的发布 tag 创建 GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.resolve_release_tag.outputs.ReleaseTag }}
+          prerelease: ${{ contains(steps.resolve_release_tag.outputs.ReleaseTag, '-alpha.') || contains(steps.resolve_release_tag.outputs.ReleaseTag, '-beta.') }}
+          generate_release_notes: true
