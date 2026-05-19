@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "发布标签（如 v1.2.3 / v1.2.3-beta.1 / v1.2.3-alpha.1）"
+        description: "发布标签（`release_tag`），形如 v1.2.3 / v1.2.3-beta.1 / v1.2.3-alpha.1）；也可选择从 main 上 `development/<release_tag>` 形式的 tag 触发，此时无需输入"
         required: false
         type: string
 
