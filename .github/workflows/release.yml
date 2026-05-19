@@ -36,6 +36,7 @@ jobs:
           release_tag_core='v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?'
           release_tag_pattern="^${release_tag_core}$"
           release_tag_input="${{ github.event.inputs.release_tag }}"
+          should_push_development_tag="true"
 
           if [[ -n "$release_tag_input" ]]; then
             if ! [[ "$release_tag_input" =~ $release_tag_pattern ]]; then
@@ -60,6 +61,7 @@ jobs:
               echo "::error::未输入 release_tag 时，选择 tag 触发必须满足 development/<release_tag> 格式，且 <release_tag> 需形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
               exit 1
             fi
+            should_push_development_tag="false"
           else
             if [[ "${{ github.ref_name }}" != "main" ]]; then
               echo "::error::请从 main 分支或 development/<release_tag> tag 触发，当前为 ${{ github.ref_type }}:${{ github.ref_name }}"
@@ -71,6 +73,7 @@ jobs:
           fi
 
           echo "ReleaseTag=$release_tag" >> "$GITHUB_OUTPUT"
+          echo "ShouldPushDevelopmentTag=$should_push_development_tag" >> "$GITHUB_OUTPUT"
 
       - name: 校验发布标签未重复
         run: |
@@ -80,9 +83,11 @@ jobs:
             exit 1
           fi
 
-          if git ls-remote --tags --exit-code origin "refs/tags/development/${{ steps.resolve_release_tag.outputs.ReleaseTag }}" >/dev/null 2>&1; then
-            echo "::error::development/${{ steps.resolve_release_tag.outputs.ReleaseTag }} 已存在，禁止重复发布"
-            exit 1
+          if [[ "${{ steps.resolve_release_tag.outputs.ShouldPushDevelopmentTag }}" == "true" ]]; then
+            if git ls-remote --tags --exit-code origin "refs/tags/development/${{ steps.resolve_release_tag.outputs.ReleaseTag }}" >/dev/null 2>&1; then
+              echo "::error::development/${{ steps.resolve_release_tag.outputs.ReleaseTag }} 已存在，禁止重复发布"
+              exit 1
+            fi
           fi
 
       - name: Checkout the original repo
@@ -153,16 +158,21 @@ jobs:
           # release 分支的发布提交打 release_tag
           git tag "${{ steps.resolve_release_tag.outputs.ReleaseTag }}" HEAD
 
-          # 优先只拉取源提交对象；若服务端策略限制，则回退到拉取 main
-          if ! git fetch --no-tags --depth=1 origin "${{ steps.original_commit_info.outputs.CommitSHA }}"; then
-            echo "::warning::无法按 SHA 直接拉取源提交对象，回退为拉取 main 分支以继续打 development tag"
-            git fetch --no-tags origin main
+          push_refs=(
+            "${{ env.ReleaseBranch }}"
+            "refs/tags/${{ steps.resolve_release_tag.outputs.ReleaseTag }}"
+          )
+
+          if [[ "${{ steps.resolve_release_tag.outputs.ShouldPushDevelopmentTag }}" == "true" ]]; then
+            # 优先只拉取源提交对象；若服务端策略限制，则回退到拉取 main
+            if ! git fetch --no-tags --depth=1 origin "${{ steps.original_commit_info.outputs.CommitSHA }}"; then
+              echo "::warning::无法按 SHA 直接拉取源提交对象，回退为拉取 main 分支以继续打 development tag"
+              git fetch --no-tags origin main
+            fi
+
+            # main 源提交打 development/release_tag
+            git tag "development/${{ steps.resolve_release_tag.outputs.ReleaseTag }}" "${{ steps.original_commit_info.outputs.CommitSHA }}"
+            push_refs+=("refs/tags/development/${{ steps.resolve_release_tag.outputs.ReleaseTag }}")
           fi
 
-          # main 源提交打 development/release_tag
-          git tag "development/${{ steps.resolve_release_tag.outputs.ReleaseTag }}" "${{ steps.original_commit_info.outputs.CommitSHA }}"
-
-          git push origin \
-            "${{ env.ReleaseBranch }}" \
-            "refs/tags/${{ steps.resolve_release_tag.outputs.ReleaseTag }}" \
-            "refs/tags/development/${{ steps.resolve_release_tag.outputs.ReleaseTag }}"
+          git push origin "${push_refs[@]}"
