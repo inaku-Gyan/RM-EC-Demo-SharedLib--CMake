@@ -33,16 +33,21 @@ jobs:
         run: |
           set -euo pipefail
           # 发布契约仅允许正式版，或 alpha/beta 预发布号（不接受其他 prerelease/build 元数据）
-          release_tag_pattern='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?$'
+          release_tag_core='v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.[1-9][0-9]*)?'
+          release_tag_pattern="^${release_tag_core}$"
           release_tag_input="${{ github.event.inputs.release_tag }}"
 
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            if [[ ! "${{ github.ref_name }}" =~ ^development/(${release_tag_pattern:1:-1})$ ]]; then
+            if [[ "${{ github.ref_name }}" != development/* ]]; then
               echo "::error::选择 tag 触发时，所选 tag 必须满足 development/<release_tag> 格式，且 <release_tag> 需形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
               exit 1
             fi
 
-            release_tag="${BASH_REMATCH[1]}"
+            release_tag="${{ github.ref_name#development/ }}"
+            if ! [[ "$release_tag" =~ $release_tag_pattern ]]; then
+              echo "::error::选择 tag 触发时，所选 tag 必须满足 development/<release_tag> 格式，且 <release_tag> 需形如 v1.2.3 / v1.2.3-alpha.1 / v1.2.3-beta.1"
+              exit 1
+            fi
 
             if [[ -n "$release_tag_input" && "$release_tag_input" != "$release_tag" ]]; then
               echo "::error::输入的 release_tag 与所选 tag 不一致：输入为 '$release_tag_input'，所选 tag 解析为 '$release_tag'"
